@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="lib" path="C:/Users/Ataka2/Downloads/stanford-parser-full-2018-10-17/stanford-parser.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/C:/Users/Ataka2/Downloads/stanford-parser-full-2018-10-17/stanford-parser-3.9.2-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="C:/Users/Ataka2/Downloads/stanford-parser-full-2018-10-17/stanford-parser-3.9.2-models.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/C:/Users/Ataka2/Downloads/stanford-parser-full-2018-10-17/stanford-parser-3.9.2-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
