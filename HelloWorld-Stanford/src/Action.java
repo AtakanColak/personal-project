@@ -1,4 +1,3 @@
 
-public class Action {
-
+public class Action extends FabulaElement{
 }
