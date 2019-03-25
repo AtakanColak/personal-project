@@ -61,6 +61,38 @@ class ParserDemo {
 		return -1;
 	}
 
+	private static Integer ActionIndex(String name) {
+		for (int i = 0; i < actions.size(); ++i) {
+			if (actions.get(i).name.equals(name))
+				return i;
+		}
+		return -1;
+	}
+
+	private static void AddAction(String name) {
+		Integer action_index = ActionIndex(name);
+		if (action_index == -1) {
+			Action a = new Action();
+			a.name = name;
+			a.id = actions.size();
+			actions.add(a);
+			action_index = a.id;
+		}
+		Integer retaring_index = agent_stack.size() - 1;
+		Integer last_depth = agent_stack.get(retaring_index).sentence_depth;
+		while(retaring_index >= 0) {
+			AgentPointer pointer = agent_stack.get(retaring_index);
+			if(pointer.sentence_depth != last_depth) break;
+			for (Integer agent_index : pointer.agent_index) {
+				Agent agent = agents.get(agent_index);
+				agent.actions.add(action_index);
+				agents.set(agent_index, agent);
+			}	
+			retaring_index--;
+		}
+		
+	}
+
 	private static void AddPointer(String name, Integer si, Integer sd) {
 		Integer index = AgentIndex(name);
 		if (index > -1) {
@@ -74,21 +106,44 @@ class ParserDemo {
 		}
 	}
 
-	private static void PopPointer() {
-		agent_stack.remove(agent_stack.size() - 1);
-	}
+//	private static void PopPointer() {
+//		agent_stack.remove(agent_stack.size() - 1);
+//	}
 
 	private static void PrintAgents() {
 		for (int i = 0; i < agents.size(); ++i) {
-			System.out.println("agents[" + i + "] :" + agents.get(i).name);
+			Agent a = agents.get(i);
+			StringBuilder sb = new StringBuilder();
+			sb.append("agents[");
+			sb.append(i);
+			sb.append("] : ");
+			sb.append(a.name);
+			for(int j =0; j < a.actions.size(); ++j) {
+				sb.append(", ");
+				sb.append(actions.get(a.actions.get(j)).name);
+			}
+			System.out.println(sb.toString());
 		}
 	}
 
 	private static void PrintStack() {
 		for (int i = 0; i < agent_stack.size(); ++i) {
 			AgentPointer cur = agent_stack.get(i);
-			System.out.println("agent_stack[" + i + "] : (" + cur.sentence_index + "," + cur.sentence_depth + ", "
-					+ agents.get(cur.agent_index).name + ")");
+			StringBuilder sb = new StringBuilder();
+			sb.append("agent_stack[");
+			sb.append(i);
+			sb.append("] : (");
+			sb.append(cur.sentence_index);
+			sb.append(",");
+			sb.append(cur.sentence_depth);
+			sb.append(",[");
+			sb.append(agents.get(cur.agent_index.get(0)).name);
+			for (int j = 1; j < cur.agent_index.size(); ++j) {
+				sb.append(",");
+				sb.append(agents.get(cur.agent_index.get(j)).name);
+			}
+			sb.append("])");
+			System.out.println(sb.toString());
 		}
 	}
 
@@ -122,19 +177,41 @@ class ParserDemo {
 		switch (prp) {
 		case "They":
 		case "they":
-			Integer last_sentence_index = agent_stack.get(agent_stack.size() - 1).sentence_index;
+			// GET LAST SENTENCE
+			AgentPointer last_pointer = agent_stack.get(agent_stack.size() - 1);
+			Integer last_sentence_index = last_pointer.sentence_index;
+			Integer min_depth = last_pointer.sentence_depth;
+			// GET MINIMUM DEPTH
+			for (int i = 0; i < agent_stack.size(); ++i) {
+				AgentPointer pointer = agent_stack.get(i);
+				if (pointer.sentence_index != last_sentence_index)
+					continue;
+				if (pointer.sentence_depth < min_depth)
+					min_depth = pointer.sentence_depth;
+			}
+			// ADD POINTER TO ALL OF THEM
+			AgentPointer motherpointer = new AgentPointer();
+			motherpointer.sentence_index = si;
+			motherpointer.sentence_depth = sd;
+			for (int i = 0; i < agent_stack.size(); ++i) {
+				AgentPointer pointer = agent_stack.get(i);
+				if (pointer.sentence_index == last_sentence_index && pointer.sentence_depth == min_depth) {
+					for (Integer integer : pointer.agent_index)
+						motherpointer.agent_index.add(integer);
+				}
+			}
+			agent_stack.add(motherpointer);
 			break;
 		}
-		AddPointer(prp, si, sd);
 	}
-	
+
 	private static void nested_switch_np(Tree t, Integer si, Integer sd) {
 		String result = NPsNN(t);
 		switch (result) {
 		case "NP":
 			break;
 		case "PRP":
-			nested_switch_prp(t,si,sd);
+			nested_switch_prp(t, si, sd);
 			break;
 		default:
 			AddPointer(result, si, sd);
@@ -148,6 +225,13 @@ class ParserDemo {
 		case "NP": {
 			nested_switch_np(t, si, sd);
 		}
+			break;
+		case "VBG":
+		case "VBD": {
+			String action_name = t.getChild(0).label().toString();
+			AddAction(action_name);
+		}
+			break;
 		}
 		for (Tree c : t.getChildrenAsList())
 			Formalise(c, si, sd + 1);
