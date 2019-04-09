@@ -14,6 +14,7 @@ import edu.stanford.nlp.process.Tokenizer;
 import edu.stanford.nlp.process.TokenizerFactory;
 import edu.stanford.nlp.trees.*;
 
+
 class ParserDemo {
 
 	// Doesn't do anything when a combination is reached as it will iterate through
@@ -25,16 +26,16 @@ class ParserDemo {
 
 	private static List<AgentPointer> agent_stack;
 	private static List<Agent> agents;
-	private static List<Action> actions;
-	private static List<InternalElement> internals;
+	private static List<FabulaElement> actions;
+	private static List<FabulaElement> internals;
 
 	public static void main(String[] args) {
 		LexicalizedParser lp = LexicalizedParser.loadModel(parserModel);
 
 		agent_stack = new ArrayList<AgentPointer>();
 		agents = new ArrayList<Agent>();
-		actions = new ArrayList<Action>();
-		internals = new ArrayList<InternalElement>();
+		actions = new ArrayList<FabulaElement>();
+		internals = new ArrayList<FabulaElement>();
 
 		TreebankLanguagePack tlp = lp.treebankLanguagePack();
 		GrammaticalStructureFactory gsf = null;
@@ -48,33 +49,21 @@ class ParserDemo {
 			Formalise(parse, ctr, 0);
 
 			ctr++;
+			
 		}
-		PrintAgents();
-		PrintStack();
+		Tools.PrintFabulaList(actions, "actions");
+		Tools.PrintAgents(agents, actions);
+		Tools.PrintStack(agent_stack, agents);
 	}
 
-	private static Integer AgentIndex(String name) {
-		for (int i = 0; i < agents.size(); ++i) {
-			if (agents.get(i).name.equals(name))
-				return i;
-		}
-		return -1;
-	}
-
-	private static Integer ActionIndex(String name) {
-		for (int i = 0; i < actions.size(); ++i) {
-			if (actions.get(i).name.equals(name))
-				return i;
-		}
-		return -1;
-	}
-
+	
 	private static void AddAction(String name) {
-		Integer action_index = ActionIndex(name);
+		Integer action_index = Tools.ElementListIndex(actions, name);
 		if (action_index == -1) {
-			Action a = new Action();
+			FabulaElement a = new FabulaElement();
 			a.name = name;
 			a.id = actions.size();
+			a.type = FabulaElement.ElementType.Action;
 			actions.add(a);
 			action_index = a.id;
 		}
@@ -94,7 +83,7 @@ class ParserDemo {
 	}
 
 	private static void AddPointer(String name, Integer si, Integer sd) {
-		Integer index = AgentIndex(name);
+		Integer index = Tools.AgentIndex(agents, name);
 		if (index > -1) {
 			agent_stack.add(new AgentPointer(index, si, sd));
 		} else {
@@ -103,47 +92,6 @@ class ParserDemo {
 			a.name = name;
 			agent_stack.add(new AgentPointer(agents.size(), si, sd));
 			agents.add(a);
-		}
-	}
-
-//	private static void PopPointer() {
-//		agent_stack.remove(agent_stack.size() - 1);
-//	}
-
-	private static void PrintAgents() {
-		for (int i = 0; i < agents.size(); ++i) {
-			Agent a = agents.get(i);
-			StringBuilder sb = new StringBuilder();
-			sb.append("agents[");
-			sb.append(i);
-			sb.append("] : ");
-			sb.append(a.name);
-			for(int j =0; j < a.actions.size(); ++j) {
-				sb.append(", ");
-				sb.append(actions.get(a.actions.get(j)).name);
-			}
-			System.out.println(sb.toString());
-		}
-	}
-
-	private static void PrintStack() {
-		for (int i = 0; i < agent_stack.size(); ++i) {
-			AgentPointer cur = agent_stack.get(i);
-			StringBuilder sb = new StringBuilder();
-			sb.append("agent_stack[");
-			sb.append(i);
-			sb.append("] : (");
-			sb.append(cur.sentence_index);
-			sb.append(",");
-			sb.append(cur.sentence_depth);
-			sb.append(",[");
-			sb.append(agents.get(cur.agent_index.get(0)).name);
-			for (int j = 1; j < cur.agent_index.size(); ++j) {
-				sb.append(",");
-				sb.append(agents.get(cur.agent_index.get(j)).name);
-			}
-			sb.append("])");
-			System.out.println(sb.toString());
 		}
 	}
 
@@ -229,6 +177,7 @@ class ParserDemo {
 		case "VBG":
 		case "VBD": {
 			String action_name = t.getChild(0).label().toString();
+			
 			AddAction(action_name);
 		}
 			break;
@@ -237,137 +186,3 @@ class ParserDemo {
 			Formalise(c, si, sd + 1);
 	}
 }
-
-//	private static int GetAgent(List<Agent> agents, String name) {
-//		for (Agent a : agents)
-//			if (a.name.equals(name))
-//				return agents.indexOf(a);
-//		return -1;
-//	}
-//
-//	private static boolean HasAction(Agent agent, String action) {
-//		for (String a : agent.actions)
-//			if (a.equals(action))
-//				return true;
-//		return false;
-//	}
-//
-//	private static Agent MergeAgent(Agent a, Agent b) {
-//		for (String action : b.actions)
-//			if (!HasAction(a, action))
-//				a.actions.add(action);
-//		return a;
-//	}
-//
-//	private static String ChildTag(Tree t) {
-//		return t.getChild(0).label().toString();
-//	}
-//
-//	private static void Formalise(Tree t, List<Agent> agents, int sentence_index) {
-//		String tag = t.label().toString();
-//		switch (tag) {
-//		case "NP": {
-//			Agent a = new Agent();
-//			agents.add(a);
-//		}
-//			break;
-//		case "NN": {
-//			String name = ChildTag(t);
-//			agents.get(agents.size() - 1).name = name;
-//		}
-//			break;
-//		case "JJ": {
-//			agents.get(agents.size() - 1).ie.add(ChildTag(t));
-//		}
-//			break;
-//		case "VBG":
-//		case "VBD": {
-//			agents.get(agents.size() - 1).actions.add(ChildTag(t));
-//		}
-//			break;
-//		default:
-//			break;
-//		}
-//		List<Tree> children = t.getChildrenAsList();
-//		if (children.size() == 0)
-//			return;
-//		for (Tree c : children) {
-//			Formalise(c, agents, sentence_index);
-//		}
-//
-//		return;
-//	}
-//
-////	private static void GetAgents(Tree t, List<Agent> agents, List<String> actions) {
-////		String tag = t.label().toString();
-////		if (tag.equals("NP"))
-////			NP(t, agents);
-//////		if(tag.equals("NN")) agents.add(new Agent(ChildTag(t)));
-//////		if(tag.equals("JJ")) agents.get(agents.size() - 1).attributes.add(ChildTag(t));
-////		if (tag.equals("VBD") || tag.equals("VBG"))
-////			agents.get(agents.size() - 1).actions.add(ChildTag(t));
-////		List<Tree> children = t.getChildrenAsList();
-////		if (children.size() == 0)
-////			return;
-////		for (Tree c : children) {
-////			GetAgents(c, agents, actions);
-////		}
-////		return;
-////	}
-//
-//	public static void demoDP(LexicalizedParser lp, String filename) {
-//		TreebankLanguagePack tlp = lp.treebankLanguagePack();
-//		GrammaticalStructureFactory gsf = null;
-//		if (tlp.supportsGrammaticalStructures()) {
-//			gsf = tlp.grammaticalStructureFactory();
-//		}
-//		List<Agent> agents = new ArrayList<Agent>();
-//		List<String> actions = new ArrayList<String>();
-//		int ctr = 0;
-//		for (List<HasWord> sentence : new DocumentPreprocessor(filename)) {
-//			Tree parse = lp.apply(sentence);
-//			parse.pennPrint();
-//			// GetAgents(parse, agents, actions);
-//			Formalise(parse, agents, ctr);
-//			ctr++;
-//			if (gsf != null) {
-////        GrammaticalStructure gs = gsf.newGrammaticalStructure(parse);
-////        Collection tdl = gs.typedDependenciesCCprocessed();
-////        System.out.println(tdl);
-////        System.out.println();
-//			}
-//		}
-//		System.out.println();
-////		System.out.println("Agents");
-//		List<Agent> agents2 = new ArrayList<Agent>();
-//		for (int i = 0; i < agents.size(); ++i) {
-//			Agent a = agents.get(i);
-//			int index = GetAgent(agents2, a.name);
-//			if (index == -1)
-//				agents2.add(a);
-//			else {
-//				agents2.set(index, MergeAgent(agents2.get(index), a));
-//			}
-//		}
-//		agents.clear();
-//		for (Agent a : agents2)
-//			agents.add(a);
-//		for (Agent a : agents) {
-//			System.out.println("Agent Name : " + a.name);
-//			for (String attribute : a.ie) {
-//				System.out.println("Internal Element : " + attribute);
-//			}
-//			for (String attribute : a.actions) {
-//				System.out.println("Action : " + attribute);
-//			}
-//		}
-////		System.out.println();
-////		System.out.println("Actions");
-////		for(String a : actions)
-////			System.out.println(a);
-//	}
-//
-//	private ParserDemo() {
-//	} // static methods only
-
-//}
