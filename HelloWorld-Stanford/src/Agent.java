@@ -10,4 +10,11 @@ public class Agent extends Identifier{
 		actions = new ArrayList<Integer>();
 		location = 0;
 	}
+	public Agent(int i, String n) {
+		internals = new ArrayList<Integer>();
+		actions = new ArrayList<Integer>();
+		location = 0;
+		id = i;
+		name = n;
+	}
 }

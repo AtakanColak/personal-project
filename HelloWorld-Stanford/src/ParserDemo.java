@@ -14,7 +14,6 @@ import edu.stanford.nlp.process.Tokenizer;
 import edu.stanford.nlp.process.TokenizerFactory;
 import edu.stanford.nlp.trees.*;
 
-
 class ParserDemo {
 
 	// Doesn't do anything when a combination is reached as it will iterate through
@@ -28,6 +27,7 @@ class ParserDemo {
 	private static List<Agent> agents;
 	private static List<FabulaElement> actions;
 	private static List<FabulaElement> internals;
+	private static List<Location> locations;
 
 	public static void main(String[] args) {
 		LexicalizedParser lp = LexicalizedParser.loadModel(parserModel);
@@ -36,6 +36,8 @@ class ParserDemo {
 		agents = new ArrayList<Agent>();
 		actions = new ArrayList<FabulaElement>();
 		internals = new ArrayList<FabulaElement>();
+		locations = new ArrayList<Location>();
+		locations.add(new Location(0, "INIT"));
 
 		TreebankLanguagePack tlp = lp.treebankLanguagePack();
 		GrammaticalStructureFactory gsf = null;
@@ -46,52 +48,76 @@ class ParserDemo {
 		for (List<HasWord> sentence : new DocumentPreprocessor(path)) {
 			Tree parse = lp.apply(sentence);
 			parse.pennPrint();
-			Formalise(parse, ctr, 0);
-
+//			Formalise(parse, ctr, 0);
+			HandleSentence(parse, ctr);
 			ctr++;
-			
+
 		}
 		Tools.PrintFabulaList(actions, "actions");
 		Tools.PrintAgents(agents, actions);
+		Tools.PrintLocations(locations);
 		Tools.PrintStack(agent_stack, agents);
 	}
 
-	
+//	3rd of May  - AI CW
+//	13th of May - Individual Project
+//	20th of May - AI Exam
+//	27th of May - Web Tech Subm
+
 	private static void AddAction(String name) {
-		Integer action_index = Tools.ElementListIndex(actions, name);
-		if (action_index == -1) {
-			FabulaElement a = new FabulaElement();
-			a.name = name;
-			a.id = actions.size();
-			a.type = FabulaElement.ElementType.Action;
-			actions.add(a);
-			action_index = a.id;
-		}
+		Integer index = Tools.AddFabulaElement(actions, FabulaElement.ElementType.Action, name);
 		Integer retaring_index = agent_stack.size() - 1;
 		Integer last_depth = agent_stack.get(retaring_index).sentence_depth;
-		while(retaring_index >= 0) {
+		while (retaring_index >= 0) {
 			AgentPointer pointer = agent_stack.get(retaring_index);
-			if(pointer.sentence_depth != last_depth) break;
+			if (pointer.sentence_depth != last_depth)
+				break;
 			for (Integer agent_index : pointer.agent_index) {
 				Agent agent = agents.get(agent_index);
-				agent.actions.add(action_index);
+				agent.actions.add(index);
 				agents.set(agent_index, agent);
-			}	
+			}
 			retaring_index--;
 		}
-		
+	}
+
+	private static void Action(String name) {
+		Integer action_index = Tools.AddFabulaElement(actions, FabulaElement.ElementType.Action, name);
+		AgentPointer last_pointer = agent_stack.get(agent_stack.size() - 1);
+		for (Integer index : last_pointer.agent_index) {
+			Agent a = agents.get(index);
+			a.actions.add(action_index);
+			agents.set(index, a);
+		}
+	}
+
+	private static Integer IndexPointer(Integer si, Integer sd) {
+		for (int i = 0; i < agent_stack.size(); ++i) {
+			if (agent_stack.get(i).sentence_depth == sd && agent_stack.get(i).sentence_index == si)
+				return i;
+		}
+		return -1;
 	}
 
 	private static void AddPointer(String name, Integer si, Integer sd) {
 		Integer index = Tools.AgentIndex(agents, name);
-		if (index > -1) {
-			agent_stack.add(new AgentPointer(index, si, sd));
-		} else {
-			Agent a = new Agent();
-			a.id = agents.size();
-			a.name = name;
-			agent_stack.add(new AgentPointer(agents.size(), si, sd));
+		Agent a = new Agent(agents.size(), name) ;
+		try {
+			a = agents.get(index);
+		}
+		catch (Exception e) {
 			agents.add(a);
+		}
+		finally {
+			Integer pointer_index = IndexPointer(si, sd);
+			if(pointer_index == -1) {
+				agent_stack.add(new AgentPointer(a.id, si, sd));
+			}
+			else {
+				AgentPointer p = agent_stack.get(pointer_index);
+				p.agent_index.add(a.id);
+				agent_stack.set(pointer_index, p);
+			}
 		}
 	}
 
@@ -99,6 +125,119 @@ class ParserDemo {
 		List<Tree> children = t.getChildrenAsList();
 		Tree last = children.get(children.size() - 1);
 		return last.getChild(0).label().toString();
+	}
+
+	private static String GetNameFromNP(Tree np) {
+		boolean hasNN = Tools.HasPhrase(np, "NN") || Tools.HasPhrase(np, "NNP") || Tools.HasPhrase(np, "NNS");
+		if (!hasNN) {
+			return "NP";
+		}
+		List<Tree> nns = new ArrayList<Tree>();
+		Tools.GetPhrase(nns, np, new String[] { "NN", "NNP", "NNS" });
+		StringBuilder name_builder = new StringBuilder();
+		name_builder.append(nns.get(0).lastChild().label().toString());
+		for (int i = 1; i < nns.size(); ++i) {
+			name_builder.append(" " + nns.get(i).lastChild().label().toString());
+		}
+		return name_builder.toString();
+	}
+
+	private static void HandleNP(Tree np, Integer si, Integer sd) {
+		String name = GetNameFromNP(np);
+		if (name.equals("NP")) {
+			List<Tree> subnps = new ArrayList<Tree>();
+			Tools.GetPhrase(subnps, np, new String[] { "NP" });
+			if (subnps.size() != 0)
+				for (Tree t : subnps)
+					HandleNP(t, si, sd + 1);
+			else {
+				Tools.GetPhrase(subnps, np, new String[] { "PRP" });
+				if (subnps.size() != 0) {
+					for (Tree t : subnps)
+						nested_switch_prp(np, si, sd);
+				} else {
+					System.out.println("REACHED NON PRP NON NP NP");
+				}
+			}
+		} else {
+			AddPointer(name, si, sd);
+		}
+	}
+
+	private static List<Integer> GetSentenceNP(Integer si) {
+		List<Integer> indices = new ArrayList<Integer>();
+		for (AgentPointer ap : agent_stack) {
+			if (ap.sentence_index == si && ap.sentence_depth == 2) {
+				for (Integer index : ap.agent_index)
+					indices.add(index);
+			}
+		}
+		return indices;
+	}
+
+	private static void HandleVP(Tree vp, Integer si, Integer sd) {
+		Tree[] c = vp.children();
+		for (int i = 0; i < c.length; ++i) {
+			String tag = c[i].label().toString();
+			switch (tag) {
+			case "VBD":
+			case "VBG":
+				String verb = c[i].firstChild().label().toString();
+				Action(verb);
+				break;
+
+			case "VP":
+				HandleVP(c[i], si, sd + 1);
+				break;
+
+			case "NP":
+				HandleNP(c[i], si, sd + 1);
+				break;
+
+			case "PP":
+				String loc_nam = GetNameFromNP(c[i].lastChild());
+				Integer loc_id = locations.size();
+				locations.add(new Location(loc_id, loc_nam));
+				List<Integer> agent_indices = GetSentenceNP(si);
+				for (Integer index : agent_indices) {
+					Agent a = agents.get(index);
+					a.location = loc_id;
+					agents.set(index, a);
+				}
+				break;
+			}
+		}
+	}
+
+	private static void HandleSentence(Tree s, Integer si) {
+		boolean hasS = Tools.HasPhrase(s, "S");
+		if (hasS) {
+			List<Tree> Ss = new ArrayList<Tree>();
+			Tools.GetPhrase(Ss, s, "S");
+			for (Tree c : Ss)
+				HandleSentence(c, si++);
+			return;
+		}
+		boolean hasNP = Tools.HasPhrase(s, "NP");
+		if (hasNP) {
+			List<Tree> nps = new ArrayList<Tree>();
+			Tools.GetPhrase(nps, s, "NP");
+			for (Tree c : nps)
+				HandleNP(c, si, 1);
+
+		} else {
+			System.out.println("THIS SENTENCE DOESNT HAVE NP");
+		}
+
+		boolean hasVP = Tools.HasPhrase(s, "VP");
+		if (hasVP) {
+			List<Tree> vps = new ArrayList<Tree>();
+			Tools.GetPhrase(vps, s, "VP");
+			for (Tree c : vps)
+				HandleVP(c, si, 1);
+		} else {
+			System.out.println("THIS SENTENCE DOESNT HAVE VP");
+		}
 	}
 
 	private static String NPsNN(Tree t) {
@@ -171,13 +310,14 @@ class ParserDemo {
 		String tag = t.label().toString();
 		switch (tag) {
 		case "NP": {
-			nested_switch_np(t, si, sd);
+			HandleNP(t, si, sd);
+			// nested_switch_np(t, si, sd);
 		}
 			break;
 		case "VBG":
 		case "VBD": {
 			String action_name = t.getChild(0).label().toString();
-			
+
 			AddAction(action_name);
 		}
 			break;

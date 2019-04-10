@@ -1,4 +1,7 @@
+import java.util.ArrayList;
 import java.util.List;
+
+import edu.stanford.nlp.trees.Tree;
 
 public class Tools {
 	public static Integer ElementListIndex(List<FabulaElement> list, String name) {
@@ -20,6 +23,19 @@ public class Tools {
 			FabulaElement a = list.get(i);
 			StringBuilder sb = new StringBuilder();
 			sb.append(name);
+			sb.append("[");
+			sb.append(i);
+			sb.append("] : ");
+			sb.append(a.name);
+			System.out.println(sb.toString());
+		}
+	}
+	
+	public static void PrintLocations(List<Location> list) {
+		for (int i = 0; i < list.size(); ++i) {
+			Location a = list.get(i);
+			StringBuilder sb = new StringBuilder();
+			sb.append("locations");
 			sb.append("[");
 			sb.append(i);
 			sb.append("] : ");
@@ -63,5 +79,43 @@ public class Tools {
 			sb.append("])");
 			System.out.println(sb.toString());
 		}
+	}
+	
+	public static Integer AddFabulaElement(List<FabulaElement> list, FabulaElement.ElementType etype, String name) {
+		Integer index = Tools.ElementListIndex(list, name);
+		if (index == -1) {
+			FabulaElement e = new FabulaElement();
+			e.name = name;
+			e.id = list.size();
+			e.type = etype;
+			list.add(e);	
+			index = e.id;
+		}
+		return index;
+	}
+	
+	public static boolean HasPhrase(Tree t, String p) {
+		for(int i = 0; i < t.children().length; ++i) {
+			if(p.equals(t.children()[i].label().toString()))
+				return true;
+		}
+		return false;
+	}
+	
+	public static void GetPhrase(List<Tree> phrases, Tree t, String[] p) {
+		Tree[] children = t.children();
+		for(int i = 0; i < t.children().length; ++i) {
+			for(int j = 0; j < p.length; ++j){
+			if(p[j].equals(children[i].label().toString()))
+				phrases.add(children[i]);
+		}}
+	}
+	
+	public static void GetPhrase(List<Tree> phrases, Tree t, String p) {
+		GetPhrase(phrases, t, new String[] {p});
+	}
+	
+	public static Tree GetChild(Tree t, Integer i) {
+		return t.children()[i];
 	}
 }
