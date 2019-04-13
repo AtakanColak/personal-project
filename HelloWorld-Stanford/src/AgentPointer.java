@@ -11,6 +11,11 @@ public class AgentPointer {
 		sentence_index = si;
 		sentence_depth = sd;
 	}
+	public AgentPointer(Integer si, Integer sd) {
+		agent_index = new ArrayList<Integer>();
+		sentence_index = si;
+		sentence_depth = sd;
+	}
 	public AgentPointer() {
 		agent_index = new ArrayList<Integer>();
 	}
