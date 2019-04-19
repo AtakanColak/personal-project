@@ -17,29 +17,30 @@ public class Tools {
 				return i;
 		return -1;
 	}
-
-	public static void PrintFabulaList(List<FabulaElement> list, String name) {
-		for (int i = 0; i < list.size(); ++i) {
-			FabulaElement a = list.get(i);
-			StringBuilder sb = new StringBuilder();
-			sb.append(name);
-			sb.append("[");
-			sb.append(i);
-			sb.append("] : ");
-			sb.append(a.name);
-			System.out.println(sb.toString());
-		}
+	
+	public static <E extends Identifier> Integer IndexAtListThatExtendsIdentifier(List<E> list, String name) {
+		for (int i = 0; i < list.size(); ++i)
+			if (list.get(i).name.equals(name))
+				return i;
+		return -1;
 	}
 
-	public static void PrintLocations(List<Location> list) {
-		for (int i = 0; i < list.size(); ++i) {
-			Location a = list.get(i);
+	public static <E extends Identifier> Integer AddToListThatExtendsIdentifier(List<E> list, E elem) {
+		Integer index = IndexAtListThatExtendsIdentifier(list, elem.name);
+		if(index == -1) {
+			elem.id = list.size();
+			index = elem.id;
+			list.add(elem);
+		}
+		return index;
+	}
+	
+	public static <E extends Identifier> void PrintListThatExtendsIdentifier(List<E> list, String listname) {
+		for (int i = 0; i < list.size(); ++i) { 
 			StringBuilder sb = new StringBuilder();
-			sb.append("locations");
-			sb.append("[");
-			sb.append(i);
-			sb.append("] : ");
-			sb.append(a.name);
+			sb.append(listname);
+			sb.append("[" + i + "] : ");
+			sb.append(list.get(i).name);
 			System.out.println(sb.toString());
 		}
 	}
