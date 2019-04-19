@@ -246,7 +246,10 @@ class MainProgram {
 				String loc_nam = GetNameFromNP(child.lastChild().children());
 				List<Integer> agentsAtLocation = agent_stack.get(agent_stack.size() - 1).agent_index;
 				for (Integer agent_index : agentsAtLocation) {
-					Tools.AddLocation(locations, agents.get(agent_index).location, loc_nam);
+					Agent agent = agents.get(agent_index);
+					Integer new_loc_id = Tools.AddLocation(locations, agent.location, loc_nam);
+					agent.location = new_loc_id;
+					agents.set(agent_index, agent);
 					break;
 				}
 
