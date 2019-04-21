@@ -13,7 +13,7 @@ public class Tools {
 
 	public static Integer AgentIndex(List<Agent> list, String name) {
 		for (int i = 0; i < list.size(); ++i)
-			if (list.get(i).name.equals(name))
+			if (list.get(i).name.contains(name))
 				return i;
 		return -1;
 	}
@@ -45,7 +45,7 @@ public class Tools {
 		}
 	}
 
-	public static void PrintAgents(List<Agent> agents, List<FabulaElement> actions) {
+	public static void PrintAgents(List<Agent> agents, List<FabulaElement> actions, List<FabulaElement> internals) {
 		for (int i = 0; i < agents.size(); ++i) {
 			Agent a = agents.get(i);
 			StringBuilder sb = new StringBuilder();
@@ -53,6 +53,13 @@ public class Tools {
 			sb.append(i);
 			sb.append("] : ");
 			sb.append(a.name);
+			if (a.internals.size() != 0) sb.append(", of internal statements : ");
+			for(Integer internal : a.internals) {
+				sb.append(", ");
+//				sb.append(internal);
+				sb.append(internals.get(internal).name);
+			}
+			sb.append(", with actions : ");
 			for (int j = 0; j < a.actions.size(); ++j) {
 				sb.append(", ");
 				sb.append(actions.get(a.actions.get(j)).name);

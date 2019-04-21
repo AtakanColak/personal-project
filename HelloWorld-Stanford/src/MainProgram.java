@@ -21,7 +21,7 @@ class MainProgram {
 	// Uses a stack in order to point to corresponding agents and avoid repitition
 
 	private static String parserModel = "edu/stanford/nlp/models/lexparser/englishPCFG.ser.gz";
-	private static String path = "test.txt";
+	private static String path = "Aesop/005";
 
 	private static List<AgentPointer> agent_stack;
 	private static List<Agent> agents;
@@ -30,8 +30,8 @@ class MainProgram {
 	private static List<Location> locations;
 	private static List<FabulaEvent> events;
 	private static List<OutcomePerception> perceptions;
-	
-	
+	private static List<FabulaElement> goals;
+
 	private static void InitLists() {
 		agent_stack = new ArrayList<AgentPointer>();
 		agents = new ArrayList<Agent>();
@@ -39,21 +39,23 @@ class MainProgram {
 		internals = new ArrayList<FabulaElement>();
 		events = new ArrayList<FabulaEvent>();
 		perceptions = new ArrayList<OutcomePerception>();
-		
+		goals = new ArrayList<FabulaElement>();
 		
 		locations = new ArrayList<Location>();
 		locations.add(new Location(0, "INIT"));
 	}
-	
+
 	private static void PrintLists() {
-		Tools.PrintAgents(agents, actions);
+		Tools.PrintListThatExtendsIdentifier(internals, "internals");
+		Tools.PrintAgents(agents, actions, internals);
 		Tools.PrintListThatExtendsIdentifier(actions, "actions");
 		Tools.PrintListThatExtendsIdentifier(locations, "locations");
 		Tools.PrintStack(agent_stack, agents);
+		Tools.PrintListThatExtendsIdentifier(goals, "goals");
 		Tools.PrintListThatExtendsIdentifier(events, "events");
-		Tools.PrintListThatExtendsIdentifier(perceptions, "perception");
+//		Tools.PrintListThatExtendsIdentifier(perceptions, "perception");
 	}
-	
+
 	public static void main(String[] args) {
 		InitLists();
 		LexicalizedParser lp = LexicalizedParser.loadModel(parserModel);
@@ -79,11 +81,15 @@ class MainProgram {
 //	27th of May - Web Tech Subm
 
 	private static void Action(String name) {
+//		System.out.println("1");
 		FabulaEvent event = new FabulaEvent();
 		event.name = name + " by";
+//		System.out.println("2");
 		Integer action_index = Tools.AddFabulaElement(actions, FabulaElement.ElementType.Action, name);
 		event.action_id = action_index;
+//		System.out.println("3");
 		AgentPointer last_pointer = agent_stack.get(agent_stack.size() - 1);
+//		System.out.println("4");
 		for (Integer index : last_pointer.agent_index) {
 			Agent a = agents.get(index);
 			a.actions.add(action_index);
@@ -92,18 +98,22 @@ class MainProgram {
 			event.subject_agent_ids.add(index);
 		}
 		Tools.AddToListThatExtendsIdentifier(events, event);
-		for(Integer subject_agent : event.subject_agent_ids) {
+		for (Integer subject_agent : event.subject_agent_ids) {
 //			System.out.println("subject_agent is " + agents.get(subject_agent).name + " at location " +  agents.get(subject_agent).location);
 //			Tools.PrintAgents(agents, actions);
-			List<Integer> observers = Tools.AgentIndicesAtLocation(agents, agents.get(subject_agent).location); //Tools.ObserverAgentsAtLocation(agents, event, agents.get(subject_agent).location);
-			for(Integer observer : observers) {
-				if(observer == subject_agent) continue;
+			List<Integer> observers = Tools.AgentIndicesAtLocation(agents, agents.get(subject_agent).location); // Tools.ObserverAgentsAtLocation(agents,
+																												// event,
+																												// agents.get(subject_agent).location);
+			for (Integer observer : observers) {
+				if (observer == subject_agent)
+					continue;
 				OutcomePerception op = new OutcomePerception();
 				op.id = perceptions.size();
 				op.actionID = event.action_id;
 				op.subjectID = subject_agent;
 				op.observerID = observer;
-				op.name = actions.get(op.actionID).name + ", subject is " + agents.get(subject_agent).name + ", observed by " + agents.get(observer).name;
+				op.name = actions.get(op.actionID).name + ", subject is " + agents.get(subject_agent).name
+						+ ", observed by " + agents.get(observer).name;
 				perceptions.add(op);
 			}
 		}
@@ -136,6 +146,7 @@ class MainProgram {
 			case "NP":
 				return null;
 			case "NN":
+			case "NNPS":
 			case "NNP":
 			case "NNS":
 				if (sb.length() != 0)
@@ -148,21 +159,60 @@ class MainProgram {
 		}
 		return sb.toString();
 	}
-
+	
+	private static String GetNameFromNPGoal(Tree nP) {
+		Tree[] np = nP.children();
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < np.length; ++i) {
+			String tag = np[i].label().toString();
+			switch (tag) {
+			case "PP":
+			case "NP":
+				if (sb.length() != 0)
+					sb.append(" ");
+				sb.append(GetNameFromNPGoal(np[i]));
+				break;
+			case "NN":
+			case "NNPS":
+			case "NNP":
+			case "NNS":
+			case "IN":
+				if (sb.length() != 0)
+					sb.append(" ");
+				sb.append(np[i].children()[0].label().toString());
+				break;
+			default:
+				break;
+			}
+		}
+		return sb.toString();
+	}
 
 	private static void HandleSentenceVP(Tree c, Integer si, Integer sd) {
 		for (int i = 0; i < c.children().length; ++i) {
 			Tree child = c.children()[i];
 			String tag = child.label().toString();
 			switch (tag) {
+			case "TO":
+				Tree subVP = c.children()[i + 1];
+				String verb = subVP.firstChild().firstChild().label().toString();
+				String NN = GetNameFromNPGoal(subVP.children()[1]);
+//				if(NN == null) NN = GetNameFromNP(subVP.lastChild().firstChild().children());
+				FabulaElement goal = new FabulaElement();
+				goal.id = goals.size();
+				goal.name = verb + " " + NN;
+				goals.add(goal);
+				break;
 			case "VBD":
 			case "VBG":
+			case "VBN":
 			case "VB":
 				Action(child.firstChild().label().toString());
 				break;
 			case "ADVP":
 			case "PP":
 				String loc_nam = GetNameFromNP(child.lastChild().children());
+				if(loc_nam == null || loc_nam.equals("")) break;
 				List<Integer> agentsAtLocation = agent_stack.get(agent_stack.size() - 1).agent_index;
 				for (Integer agent_index : agentsAtLocation) {
 					Agent agent = agents.get(agent_index);
@@ -172,6 +222,28 @@ class MainProgram {
 //					break;
 				}
 				break;
+			case "ADJP":
+				String adj_nam = child.firstChild().firstChild().label().toString();
+				Integer internal_index = Tools.IndexAtListThatExtendsIdentifier(internals, adj_nam);
+//				System.out.println("adjnam is " + adj_nam + " and internal index is " + internal_index);
+				if (internal_index == -1) {
+					FabulaElement adj = new FabulaElement();
+					adj.type = FabulaElement.ElementType.Internal;
+					adj.id = internals.size();
+					internal_index = adj.id;
+//					System.out.println("new id is " + adj.id);
+					adj.name = adj_nam;
+					internals.add(adj);
+				}
+				for(Integer agentID : agent_stack.get(agent_stack.size() - 1).agent_index) {
+//					System.out.println("agentID is " + agentID);
+					Agent a = agents.get(agentID);
+					a.internals.add(internal_index);
+					agents.set(agentID, a);
+				}
+				break;
+			case "SBAR":
+			case "S":
 			case "VP":
 				HandleSentenceVP(child, si, sd + 1);
 				break;
@@ -180,6 +252,9 @@ class MainProgram {
 	}
 
 	private static void HandleSentenceNP(Tree c, Integer si, Integer sd) {
+		if(c.firstChild().label().toString().equals("PRP") && c.children().length == 1 && agent_stack.size() == 0) {
+			AddPointer(c.firstChild().firstChild().label().toString(), si, sd);
+		}
 		String sen_np = GetNameFromNP(c.children());
 		AgentPointer sentence_pointer = new AgentPointer(si, sd);
 		// If it has child NPs, you can go below one more level
@@ -187,6 +262,7 @@ class MainProgram {
 			for (int i = 0; i < c.children().length; ++i) {
 				if (c.children()[i].label().toString().equals("NP")) {
 					sen_np = GetNameFromNP(c.children()[i].children());
+					if(sen_np == null) continue;
 					int agent_index = Tools.AgentIndex(agents, sen_np);
 					if (agent_index == -1) {
 						agent_index = agents.size();
@@ -207,6 +283,7 @@ class MainProgram {
 			Tree c = s.children()[i];
 			String cTag = c.label().toString();
 			switch (cTag) {
+			case "PP":
 			case "ROOT":
 			case "S":
 			case "SBAR":
@@ -226,6 +303,5 @@ class MainProgram {
 		}
 //		si++;
 	}
-
 
 }
