@@ -114,6 +114,33 @@ public class Tools {
 			}
 		}
 	}
+	
+	public static List<Integer> AgentIndicesAtLocation(List<Agent> agents, Integer location_id) {
+		List<Integer> indices = new ArrayList<Integer>();
+		for(Agent a  : agents) {
+			if(a.location == location_id)
+				indices.add(a.id);
+		}
+		return indices;
+	}
+	
+	private static Integer IsAgentObserver(FabulaEvent event, Integer agentID) {
+		for(Integer i : event.subject_agent_ids) {
+			if(i == agentID) return -1;
+		}
+		return agentID;
+	}
+	
+	public static List<Integer> ObserverAgentsAtLocation(List<Agent> agents, FabulaEvent event, Integer location) {
+		List<Integer> list = new ArrayList<Integer>();
+		for(Agent a : agents) {
+			if(a.location == location) {
+				Integer r = IsAgentObserver(event, a.id);
+				if(r != -1) list.add(r);
+			} 
+		}
+		return list;
+	}
 
 	private static Integer LocationIndex(List<Location> locations, String location_name) {
 		for (int i = 0; i < locations.size(); ++i)

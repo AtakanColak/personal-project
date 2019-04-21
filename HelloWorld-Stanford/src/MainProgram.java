@@ -29,6 +29,8 @@ class MainProgram {
 	private static List<FabulaElement> internals;
 	private static List<Location> locations;
 	private static List<FabulaEvent> events;
+	private static List<OutcomePerception> perceptions;
+	
 	
 	private static void InitLists() {
 		agent_stack = new ArrayList<AgentPointer>();
@@ -36,6 +38,8 @@ class MainProgram {
 		actions = new ArrayList<FabulaElement>();
 		internals = new ArrayList<FabulaElement>();
 		events = new ArrayList<FabulaEvent>();
+		perceptions = new ArrayList<OutcomePerception>();
+		
 		
 		locations = new ArrayList<Location>();
 		locations.add(new Location(0, "INIT"));
@@ -47,6 +51,7 @@ class MainProgram {
 		Tools.PrintListThatExtendsIdentifier(locations, "locations");
 		Tools.PrintStack(agent_stack, agents);
 		Tools.PrintListThatExtendsIdentifier(events, "events");
+		Tools.PrintListThatExtendsIdentifier(perceptions, "perception");
 	}
 	
 	public static void main(String[] args) {
@@ -67,9 +72,10 @@ class MainProgram {
 		PrintLists();
 	}
 
-//	3rd of May  - AI CW
+//	3rd  of May - AI CW
 //	13th of May - Individual Project
 //	20th of May - AI Exam
+//  22th of May - Returning Home
 //	27th of May - Web Tech Subm
 
 	private static void Action(String name) {
@@ -86,6 +92,21 @@ class MainProgram {
 			event.subject_agent_ids.add(index);
 		}
 		Tools.AddToListThatExtendsIdentifier(events, event);
+		for(Integer subject_agent : event.subject_agent_ids) {
+//			System.out.println("subject_agent is " + agents.get(subject_agent).name + " at location " +  agents.get(subject_agent).location);
+//			Tools.PrintAgents(agents, actions);
+			List<Integer> observers = Tools.AgentIndicesAtLocation(agents, agents.get(subject_agent).location); //Tools.ObserverAgentsAtLocation(agents, event, agents.get(subject_agent).location);
+			for(Integer observer : observers) {
+				if(observer == subject_agent) continue;
+				OutcomePerception op = new OutcomePerception();
+				op.id = perceptions.size();
+				op.actionID = event.action_id;
+				op.subjectID = subject_agent;
+				op.observerID = observer;
+				op.name = actions.get(op.actionID).name + ", subject is " + agents.get(subject_agent).name + ", observed by " + agents.get(observer).name;
+				perceptions.add(op);
+			}
+		}
 	}
 
 	private static void AddPointer(String name, Integer si, Integer sd) {
@@ -148,9 +169,9 @@ class MainProgram {
 					Integer new_loc_id = Tools.AddLocation(locations, agent.location, loc_nam);
 					agent.location = new_loc_id;
 					agents.set(agent_index, agent);
-					break;
+//					break;
 				}
-
+				break;
 			case "VP":
 				HandleSentenceVP(child, si, sd + 1);
 				break;
