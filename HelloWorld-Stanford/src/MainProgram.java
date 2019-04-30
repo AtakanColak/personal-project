@@ -22,9 +22,10 @@ class MainProgram {
 
 	private static StringBuilder log;
 	private static Integer logctr;
+	private static Integer story_id;
 	
 	private static String parserModel = "edu/stanford/nlp/models/lexparser/englishPCFG.ser.gz";
-	private static String path = "Aesop/001";
+	private static String path = "Aesop/005";
 	
 	private static List<AgentPointer> agent_stack;
 	private static List<Agent> agents;
@@ -38,6 +39,7 @@ class MainProgram {
 	private static void InitLists() {
 		log = new StringBuilder();
 		logctr = 0;
+		story_id = 0;
 		agent_stack = new ArrayList<AgentPointer>();
 		agents = new ArrayList<Agent>();
 		actions = new ArrayList<FabulaElement>();
@@ -60,6 +62,15 @@ class MainProgram {
 //		Tools.PrintListThatExtendsIdentifier(events, "events");
 //		Tools.PrintListThatExtendsIdentifier(perceptions, "perception");
 		System.out.print(log.toString());
+		System.out.println("");
+		FabulaEvent a = events.get(1);
+		System.out.println("PMI values for " + a.name);
+		for(FabulaEvent e : events) {
+			if (a.id == e.id) continue;
+			double pmi = Tools.pmi(actions, events, story_id + 1, a, e);
+			System.out.println(e.name + " \t: " + pmi);
+		}
+//		System.out.println("Coref of Events is " + Tools.ulnec_numerator_c(events, 1, events.get(11), events.get(13)));
 	}
 	
 	private static void Log(String name) {
@@ -96,7 +107,7 @@ class MainProgram {
 
 	private static void Action(String name) {
 //		System.out.println("1");
-		FabulaEvent event = new FabulaEvent();
+		FabulaEvent event = new FabulaEvent(story_id);
 		event.name = name + " by";
 //		System.out.println("2");
 		Integer action_index = Tools.AddFabulaElement(actions, FabulaElement.ElementType.Action, name);
