@@ -1,7 +1,12 @@
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.ling.HasWord;
@@ -23,10 +28,10 @@ class MainProgram {
 	private static StringBuilder log;
 	private static Integer logctr;
 	private static Integer story_id;
-	
+
 	private static String parserModel = "edu/stanford/nlp/models/lexparser/englishPCFG.ser.gz";
 	private static String path = "Aesop/005";
-	
+
 	private static List<AgentPointer> agent_stack;
 	private static List<Agent> agents;
 	private static List<FabulaElement> actions;
@@ -47,7 +52,7 @@ class MainProgram {
 		events = new ArrayList<FabulaEvent>();
 		perceptions = new ArrayList<OutcomePerception>();
 		goals = new ArrayList<FabulaElement>();
-		
+
 		locations = new ArrayList<Location>();
 		locations.add(new Location(0, "INIT"));
 	}
@@ -61,40 +66,67 @@ class MainProgram {
 //		Tools.PrintListThatExtendsIdentifier(goals, "goals");
 //		Tools.PrintListThatExtendsIdentifier(events, "events");
 //		Tools.PrintListThatExtendsIdentifier(perceptions, "perception");
-		System.out.print(log.toString());
+//		System.out.print(log.toString());
 		System.out.println("");
-		FabulaEvent a = events.get(1);
-		System.out.println("PMI values for " + a.name);
-		for(FabulaEvent e : events) {
-			if (a.id == e.id) continue;
+		FabulaEvent a = events.get(11);
+		System.out.println("PMI values for " + actions.get(a.action_id).name);
+		Map<Integer, Double> pmis = new HashMap<>();
+		for (FabulaEvent e : events) {
+			if (a.id == e.id)
+				continue;
 			double pmi = Tools.pmi(actions, events, story_id + 1, a, e);
-			System.out.println(e.name + " \t: " + pmi);
+			pmis.put(e.action_id, pmi);
+//			System.out.println(e.name + " \t: " + pmi);
+		}
+		Map<Integer, Double> sorted_pmis = pmis.entrySet().stream().sorted(Map.Entry.comparingByValue()).collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue(), (e1, e2) -> e2, LinkedHashMap::new));
+		for(Integer aid : sorted_pmis.keySet()) {
+//			StringBuilder pmiprinter = new StringBuilder();
+			
+			
+			/*
+			 * The second string begins after 40 characters. The dash means that the
+			 * first string is left-justified.
+			 */
+			String format = "%-40s%s%n";
+			System.out.printf(format, actions.get(aid).name, sorted_pmis.get(aid).toString());
+//			System.out.printf(format, prefix2, msg);
+			
+//			pmiprinter.append(actions.get(aid).name);
+//			if(pmiprinter.length() < 7) pmiprinter.append("\t");
+//			if(pmiprinter.length() < 15) pmiprinter.append("\t");
+//			pmiprinter.append(" : ");
+//			pmiprinter.append(sorted_pmis.get(aid).toString());
+//			System.out.println(pmiprinter.toString());
 		}
 //		System.out.println("Coref of Events is " + Tools.ulnec_numerator_c(events, 1, events.get(11), events.get(13)));
 	}
-	
+
 	private static void Log(String name) {
 		Integer hundreds = (logctr / 100);
 		Integer tens = (logctr % 100) / 10;
 		Integer ones = logctr % 10;
-		log.append( "log[" + hundreds.toString() + tens.toString() + ones.toString() + "]: " + name + "\n"); 
+		log.append("log[" + hundreds.toString() + tens.toString() + ones.toString() + "]: " + name + "\n");
 		logctr++;
 	}
 
 	public static void main(String[] args) {
 		InitLists();
-		LexicalizedParser lp = LexicalizedParser.loadModel(parserModel);
-		TreebankLanguagePack tlp = lp.treebankLanguagePack();
-		GrammaticalStructureFactory gsf = null;
-		if (tlp.supportsGrammaticalStructures()) {
-			gsf = tlp.grammaticalStructureFactory();
-		}
-		int ctr = 0;
-		for (List<HasWord> sentence : new DocumentPreprocessor(path)) {
-			Tree parse = lp.apply(sentence);
-			parse.pennPrint();
-			HandleSentence(parse, ctr, 0);
-			ctr++;
+		for (int i = 1; i < 10; ++i) {
+			path = "Aesop/00" + i;
+			LexicalizedParser lp = LexicalizedParser.loadModel(parserModel);
+			TreebankLanguagePack tlp = lp.treebankLanguagePack();
+			GrammaticalStructureFactory gsf = null;
+			if (tlp.supportsGrammaticalStructures()) {
+				gsf = tlp.grammaticalStructureFactory();
+			}
+			int ctr = 0;
+			for (List<HasWord> sentence : new DocumentPreprocessor(path)) {
+				Tree parse = lp.apply(sentence);
+//				parse.pennPrint();
+				HandleSentence(parse, ctr, 0);
+				ctr++;
+			}
+			story_id++;
 		}
 		PrintLists();
 	}
@@ -111,7 +143,7 @@ class MainProgram {
 		event.name = name + " by";
 //		System.out.println("2");
 		Integer action_index = Tools.AddFabulaElement(actions, FabulaElement.ElementType.Action, name);
-	
+
 		Log("Action : " + actions.get(action_index).name);
 		event.action_id = action_index;
 //		System.out.println("3");
@@ -160,7 +192,7 @@ class MainProgram {
 			Integer pointer_index = -1;// IndexPointer(si, sd);
 			if (pointer_index == -1) {
 				agent_stack.add(new AgentPointer(a.id, si, sd));
-				
+
 			} else {
 				AgentPointer p = agent_stack.get(pointer_index);
 				p.agent_index.add(a.id);
@@ -192,7 +224,7 @@ class MainProgram {
 		}
 		return sb.toString();
 	}
-	
+
 	private static String GetNameFromNPGoal(Tree nP) {
 		Tree[] np = nP.children();
 		StringBuilder sb = new StringBuilder();
@@ -248,18 +280,24 @@ class MainProgram {
 			case "ADVP":
 			case "PP":
 				String loc_nam = GetNameFromNP(child.lastChild().children());
-				if(loc_nam == null || loc_nam.equals("")) {if (child.children().length > 0)HandleSentenceVP(child.lastChild(), si, sd+1); break;};
+				if (loc_nam == null || loc_nam.equals("")) {
+					if (child.children().length > 0)
+						HandleSentenceVP(child.lastChild(), si, sd + 1);
+					break;
+				}
+				;
 				List<Integer> agentsAtLocation = agent_stack.get(agent_stack.size() - 1).agent_index;
 				for (Integer agent_index : agentsAtLocation) {
 					Agent agent = agents.get(agent_index);
 					Integer new_loc_id = Tools.AddLocation(locations, agent.location, loc_nam);
-					Log("Location change : " + agent.name + " at " + locations.get(agent.location).name +" moved to "+ locations.get(new_loc_id).name);
+					Log("Location change : " + agent.name + " at " + locations.get(agent.location).name + " moved to "
+							+ locations.get(new_loc_id).name);
 					agent.location = new_loc_id;
 					agents.set(agent_index, agent);
 //					break;
 				}
-				for(Agent a : agents) {
-					if(a.name.contains(loc_nam)) {
+				for (Agent a : agents) {
+					if (a.name.contains(loc_nam)) {
 						AddPointer(a.name, si, sd);
 					}
 				}
@@ -278,7 +316,7 @@ class MainProgram {
 					internals.add(adj);
 					Log("Internal : " + adj.name);
 				}
-				for(Integer agentID : agent_stack.get(agent_stack.size() - 1).agent_index) {
+				for (Integer agentID : agent_stack.get(agent_stack.size() - 1).agent_index) {
 //					System.out.println("agentID is " + agentID);
 					Agent a = agents.get(agentID);
 					a.internals.add(internal_index);
@@ -295,12 +333,13 @@ class MainProgram {
 	}
 
 	private static void HandleSentenceNP(Tree c, Integer si, Integer sd) {
-		if(c.firstChild().label().toString().equals("PRP") && c.children().length == 1 && agent_stack.size() == 0) {
+		if (c.firstChild().label().toString().equals("PRP") && c.children().length == 1 && agent_stack.size() == 0) {
 			AddPointer(c.firstChild().firstChild().label().toString(), si, sd);
 		}
-		if(c.firstChild().firstChild().label().toString().equals("I")) {
-			for(int i = agent_stack.size() - 2; i > -1; i--) {
-				if((agent_stack.get(i).sentence_index == si - 1 || (agent_stack.get(i).sentence_index == si)) && agent_stack.get(i).agent_index.size() == 1) {
+		if (c.firstChild().firstChild().label().toString().equals("I")) {
+			for (int i = agent_stack.size() - 2; i > -1; i--) {
+				if ((agent_stack.get(i).sentence_index == si - 1 || (agent_stack.get(i).sentence_index == si))
+						&& agent_stack.get(i).agent_index.size() == 1) {
 					AddPointer(agents.get(agent_stack.get(i).agent_index.get(0)).name, si, sd);
 					break;
 				}
@@ -313,7 +352,8 @@ class MainProgram {
 			for (int i = 0; i < c.children().length; ++i) {
 				if (c.children()[i].label().toString().equals("NP")) {
 					sen_np = GetNameFromNP(c.children()[i].children());
-					if(sen_np == null) continue;
+					if (sen_np == null)
+						continue;
 					int agent_index = Tools.AgentIndex(agents, sen_np);
 					if (agent_index == -1) {
 						agent_index = agents.size();
@@ -326,8 +366,8 @@ class MainProgram {
 			}
 			agent_stack.add(sentence_pointer);
 			StringBuilder sbi = new StringBuilder();
-			sbi.append("Agent Pointer : " );
-			for(Integer aid :sentence_pointer.agent_index) {
+			sbi.append("Agent Pointer : ");
+			for (Integer aid : sentence_pointer.agent_index) {
 				sbi.append(agents.get(aid).name + ", ");
 			}
 			Log(sbi.toString());

@@ -238,7 +238,7 @@ public class Tools {
 	public static double pmi(List<FabulaElement> actions, List<FabulaEvent> events, Integer story_count, FabulaEvent a, FabulaEvent b) {
 		double n = ulnec_numerator_p(events, story_count, a, b);
 		double d = occurence_probability(actions, events, a) * occurence_probability(actions, events, b); 
-		return Math.log10(n / d);
+		return Math.abs(Math.log10(n / d));
 	}
 	
 }
