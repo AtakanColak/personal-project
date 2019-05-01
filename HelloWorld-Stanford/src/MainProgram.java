@@ -1,4 +1,8 @@
+import java.io.File;
+import java.io.Reader;
+import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -7,6 +11,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
 
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.ling.HasWord;
@@ -17,6 +27,7 @@ import edu.stanford.nlp.process.DocumentPreprocessor;
 import edu.stanford.nlp.process.PTBTokenizer;
 import edu.stanford.nlp.process.Tokenizer;
 import edu.stanford.nlp.process.TokenizerFactory;
+import edu.stanford.nlp.tagger.maxent.MaxentTagger;
 import edu.stanford.nlp.trees.*;
 
 class MainProgram {
@@ -31,6 +42,7 @@ class MainProgram {
 
 	private static String parserModel = "edu/stanford/nlp/models/lexparser/englishPCFG.ser.gz";
 	private static String path = "Aesop/005";
+	private static String demades = "The orator Demades was trying to address his Athenian audience. When he failed to get their attention, he asked if he might tell them an Aesop's fable. The audience agreed, so Demades began his story. 'The goddess Demeter, a swallow, and an eel were walking together down the road. When they reached a river, the swallow flew up in the air and the eel jumped into the water.' Demades then fell silent. The audience asked, 'And what about the goddess Demeter?' 'As for Demeter,' Demades replied, 'she is angry at all of you for preferring Aesop's fables to politics!' ";
 
 	private static List<AgentPointer> agent_stack;
 	private static List<Agent> agents;
@@ -66,39 +78,23 @@ class MainProgram {
 //		Tools.PrintListThatExtendsIdentifier(goals, "goals");
 //		Tools.PrintListThatExtendsIdentifier(events, "events");
 //		Tools.PrintListThatExtendsIdentifier(perceptions, "perception");
-//		System.out.print(log.toString());
-		System.out.println("");
-		FabulaEvent a = events.get(11);
-		System.out.println("PMI values for " + actions.get(a.action_id).name);
-		Map<Integer, Double> pmis = new HashMap<>();
-		for (FabulaEvent e : events) {
-			if (a.id == e.id)
-				continue;
-			double pmi = Tools.pmi(actions, events, story_id + 1, a, e);
-			pmis.put(e.action_id, pmi);
-//			System.out.println(e.name + " \t: " + pmi);
-		}
-		Map<Integer, Double> sorted_pmis = pmis.entrySet().stream().sorted(Map.Entry.comparingByValue()).collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue(), (e1, e2) -> e2, LinkedHashMap::new));
-		for(Integer aid : sorted_pmis.keySet()) {
-//			StringBuilder pmiprinter = new StringBuilder();
-			
-			
-			/*
-			 * The second string begins after 40 characters. The dash means that the
-			 * first string is left-justified.
-			 */
-			String format = "%-40s%s%n";
-			System.out.printf(format, actions.get(aid).name, sorted_pmis.get(aid).toString());
-//			System.out.printf(format, prefix2, msg);
-			
-//			pmiprinter.append(actions.get(aid).name);
-//			if(pmiprinter.length() < 7) pmiprinter.append("\t");
-//			if(pmiprinter.length() < 15) pmiprinter.append("\t");
-//			pmiprinter.append(" : ");
-//			pmiprinter.append(sorted_pmis.get(aid).toString());
-//			System.out.println(pmiprinter.toString());
-		}
-//		System.out.println("Coref of Events is " + Tools.ulnec_numerator_c(events, 1, events.get(11), events.get(13)));
+		System.out.print(log.toString());
+//		System.out.println("");
+//		FabulaEvent a = events.get(0);
+//		System.out.println("PMI values for " + actions.get(a.action_id).name);
+//		Map<Integer, Double> pmis = new HashMap<>();
+//		for (FabulaEvent e : events) {
+//			if (a.id == e.id)
+//				continue;
+//			double pmi = Tools.pmi(actions, events, story_id + 1, a, e);
+//			pmis.put(e.action_id, pmi);
+//		}
+//		Map<Integer, Double> sorted_pmis = pmis.entrySet().stream().sorted(Map.Entry.comparingByValue())
+//				.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue(), (e1, e2) -> e2, LinkedHashMap::new));
+//		for (Integer aid : sorted_pmis.keySet()) {
+//			String format = "%-40s%s%n";
+//			System.out.printf(format, actions.get(aid).name, sorted_pmis.get(aid).toString());
+//		}
 	}
 
 	private static void Log(String name) {
@@ -111,24 +107,52 @@ class MainProgram {
 
 	public static void main(String[] args) {
 		InitLists();
-		for (int i = 1; i < 10; ++i) {
-			path = "Aesop/00" + i;
+		try {
+			File file = new File("Aesop/aesop.xml");
+			DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
+			Document document = documentBuilder.parse(file);
+			NodeList nl = document.getElementsByTagName("fable");
 			LexicalizedParser lp = LexicalizedParser.loadModel(parserModel);
-			TreebankLanguagePack tlp = lp.treebankLanguagePack();
-			GrammaticalStructureFactory gsf = null;
-			if (tlp.supportsGrammaticalStructures()) {
-				gsf = tlp.grammaticalStructureFactory();
+			for (int i = 0; i < nl.getLength(); i++) {
+				String fable_string = nl.item(i).getTextContent();
+				Reader reader = new StringReader(fable_string);
+				DocumentPreprocessor dp = new DocumentPreprocessor(reader);
+				int ctr = 0;
+				for (List<HasWord> sentence : dp) {
+					Tree parse = lp.apply(sentence);
+//					parse.pennPrint();
+					HandleSentence(parse, ctr, 0);
+					ctr++;
+				}
+				story_id++;
+				if(i == 2) break;
 			}
-			int ctr = 0;
-			for (List<HasWord> sentence : new DocumentPreprocessor(path)) {
-				Tree parse = lp.apply(sentence);
-//				parse.pennPrint();
-				HandleSentence(parse, ctr, 0);
-				ctr++;
-			}
-			story_id++;
+
+		} catch (Exception e) {
+			System.out.println(e.toString());
+		} finally {
+			PrintLists();
 		}
-		PrintLists();
+//		
+//		for (int i = 1; i < 10; ++i) {
+//			path = "Aesop/00" + i;
+//			LexicalizedParser lp = LexicalizedParser.loadModel(parserModel);
+//			TreebankLanguagePack tlp = lp.treebankLanguagePack();
+//			GrammaticalStructureFactory gsf = null;
+//			if (tlp.supportsGrammaticalStructures()) {
+//				gsf = tlp.grammaticalStructureFactory();
+//			}
+//			int ctr = 0;
+//			for (List<HasWord> sentence : new DocumentPreprocessor(path)) {
+//				Tree parse = lp.apply(sentence);
+////				parse.pennPrint();
+//				HandleSentence(parse, ctr, 0);
+//				ctr++;
+//			}
+//			
+//		}
+//		
 	}
 
 //	3rd  of May - AI CW
