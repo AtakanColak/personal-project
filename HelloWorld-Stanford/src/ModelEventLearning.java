@@ -26,7 +26,7 @@ public class ModelEventLearning {
 //	}
 	
 	private static Integer C(List<FabulaEvent> events, FabulaEvent a, FabulaEvent b) {
-		Integer coref_count = 0;
+		Integer coref_count = 1;
 		for(Integer i1 = 0; i1 < events.size(); ++i1) {
 			boolean i1isA = true;
 			FabulaEvent e1 = events.get(i1);
@@ -85,16 +85,17 @@ public class ModelEventLearning {
 		double n = P(events, a, b, exyedf);
 		double d = (Pa * Pb);
 		double r = n / d;
-		if(n == 0) return 0;
+//		if(n == 0) return 0;
 		double pmi = Math.log10(r);
 		pmi = Math.abs(pmi);
-//		if(((Double)pmi).isInfinite()) {
+		if(((Double)pmi).isInfinite()) {
+			return 0;
 //			System.out.println("ERROR of INFINITY");
 //			System.out.println("n is " + n);
 //			System.out.println("d is " + d);
 //			System.out.println("r is " + d);
 //			System.out.println("pmi is " + pmi);
-//		}
+		}
 		return pmi;
 	}
 	
@@ -143,16 +144,16 @@ public class ModelEventLearning {
 		return SORTED;
 	}
 
-	public static Map<Integer, Map<Integer, Double>> AllProbabilities(List<FabulaEvent> events, List<FabulaElement> actions) {
-		Map<Integer, Map<Integer, Double>> superset = new HashMap<>();
-		float ctr = 0;
-		for(FabulaEvent e : events) {
-			superset.put(e.id, EP(e, events, actions));
-			ctr += 100;
-			System.out.println((ctr / events.size()) + "% done");
-		}
-		return null;
-	}
+//	public static Map<Integer, Map<Integer, Double>> AllProbabilities(List<FabulaEvent> events, List<FabulaElement> actions) {
+//		Map<Integer, Map<Integer, Double>> superset = new HashMap<>();
+//		float ctr = 0;
+//		for(FabulaEvent e : events) {
+//			superset.put(e.id, EP(e, events, actions));
+//			ctr += 100;
+//			System.out.println((ctr / events.size()) + "% done");
+//		}
+//		return null;
+//	}
 	
 //	public static Map<Integer, Double> EventProbabilities(FabulaEvent a, List<FabulaEvent> es, List<FabulaElement> as,
 //			Integer story_count) {

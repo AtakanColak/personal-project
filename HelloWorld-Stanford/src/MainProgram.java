@@ -1,6 +1,7 @@
 import java.io.File;
 import java.io.Reader;
 import java.io.StringReader;
+import java.sql.Time;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -93,7 +94,25 @@ class MainProgram {
 //		FabulaEvent a = events.get(0);
 //		
 	}
+	
+	@SuppressWarnings("unchecked")
+	private static void LoadData() {
+//		agents = (List<Agent>) ModelInputOutput.ReadObject("Data/agents.txt");
+		events  = (List<FabulaEvent>) ModelInputOutput.ReadObject("Data/events.txt");
+		actions = (List<FabulaElement>) ModelInputOutput.ReadObject("Data/actions.txt");
+	}
 
+	private static void CalcPMI(FabulaEvent e) {
+		Map<Integer, Double> list = ModelEventLearning.EP(e, events, actions);
+		ModelInputOutput.WriteObject("PMI/" + actions.get(e.action_id).name + ".txt", list);
+		ModelInputOutput.PrintEventProbabilities(list, actions);
+	}
+	
+	private static void LoadPMI(FabulaEvent e) {
+		Map<Integer, Double> list = (Map<Integer, Double>) ModelInputOutput.ReadObject("PMI/" + actions.get(e.action_id).name + ".txt");
+		ModelInputOutput.PrintEventProbabilities(list, actions);
+	}
+	
 	private static void SaveData() {
 		ModelInputOutput.WriteObject("Data/agents.txt", agents);
 		ModelInputOutput.WriteObject("Data/pointers.txt", agent_stack);
@@ -128,15 +147,31 @@ class MainProgram {
 		logctr++;
 	}
 
-	@SuppressWarnings("unchecked")
 	public static void main(String[] args) {
+		int mode = 1;
+		int eventid = 13;
 //		Map<Integer, Double> asked = (Map<Integer, Double>) ModelInputOutput.ReadObject("asked.txt");
 //		actions = (List<FabulaElement>) ModelInputOutput.ReadObject("actions.txt");
 //		System.out.println("Probabilities for asked;");
 //		ModelInputOutput.PrintEventProbabilities(asked, actions);
 //		if (true) return;
-		ReadFables();
-		SaveData();
+		switch (mode) {
+		case 0:
+			ReadFables();
+			SaveData();
+			break;
+		case 1: {
+			LoadData();
+			FabulaEvent e = events.get(eventid);
+			CalcPMI(e);
+			break;}
+		case 2: {
+			LoadData();
+			FabulaEvent e = events.get(eventid);
+			LoadPMI(e);
+			break;}
+		}
+		
 		System.out.println("End of program execution.");
 	}
 
