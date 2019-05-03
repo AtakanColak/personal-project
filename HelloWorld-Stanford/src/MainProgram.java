@@ -78,10 +78,12 @@ class MainProgram {
 //		ModelInputOutput.PrintIdentifierList(locations, "Location");
 //		ModelInputOutput.PrintIdentifierList(perceptions, "Perception");
 //		ModelInputOutput.PrintEvents(events, agents, actions);
-		ModelInputOutput.PrintAgents(agents, internals, actions, locations);
-		ModelInputOutput.PrintAgentPointers(agent_stack, agents);
-
-		
+//		ModelInputOutput.PrintAgents(agents, internals, actions, locations);
+//		ModelInputOutput.PrintAgentPointers(agent_stack, agents);
+		System.out.println(events.get(15).toString(agents, actions));
+		Map<Integer, Double> EPS = ModelEventLearning.EP(events.get(15), events, actions);
+		ModelInputOutput.PrintEventProbabilities(EPS, actions);
+//		ModelInputOutput.PrintEventProbabilities(ModelEventLearning.EventProbabilities(events.get(15), events, actions, story_id + 1), actions);
 //		System.out.print(log.toString());
 //		System.out.println("");
 //		FabulaEvent a = events.get(0);
@@ -108,7 +110,7 @@ class MainProgram {
 				sictr++;
 			}
 			story_id++;
-			break;
+			if(story_id == 25) break;
 		}
 		PrintLists();
 //		try {
@@ -403,10 +405,16 @@ class MainProgram {
 			String tag = child.label().toString();
 			switch (tag) {
 			case "TO":
+				try {
 				Tree subVP = c.children()[i + 1];
 				String verb = subVP.firstChild().firstChild().label().toString();
 				String noun = GetName(subVP.children()[1], true);
 				IdentifyGoal(verb + " " + noun);
+				}
+				catch (Exception e){
+					System.out.println("Out of bounds at story " + story_id + " | sentence " + si );
+				}
+				finally {}
 				break;
 			case "VBZ":
 			case "VBD":
@@ -432,7 +440,8 @@ class MainProgram {
 					agent.location = new_loc_id;
 					agents.set(agent_at_location, agent);
 				}
-				for (Agent a : agents) {
+				for (Object o : agents.toArray()) {
+					Agent a = (Agent) o;
 					if (a.name.contains(loc_nam)) {
 						IdentifyAgent(a.name, si, sd);
 					}

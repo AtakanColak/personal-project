@@ -1,6 +1,8 @@
 import java.io.File;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -60,7 +62,14 @@ public class ModelInputOutput {
 
 	public static void PrintEventProbabilities(Map<Integer, Double> eps, List<FabulaElement> as) {
 		Set<Integer> keyset = eps.keySet();
-		for(int i = keyset.size() - 1; i >= 0; --i) 
-			System.out.printf("%-20s%s%n", as.get(i).name, eps.get(i).toString());
+		List<String> reverse_printing = new ArrayList<String>();
+		for (Integer key : keyset) {
+			reverse_printing.add(String.format("%-20s%s%n", as.get(key).name, eps.get(key).toString()));
+		}
+		Collections.reverse(reverse_printing);
+		for(String s : reverse_printing) 
+			System.out.print(s);
+//			System.out.printf("%-20s%s%n", as.get(key).name, eps.get(key).toString());
+		
 	}
 }

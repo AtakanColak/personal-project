@@ -24,8 +24,8 @@ public class AgentPointer {
 	}
 
 	public String toString(List<Agent> agents) {
-		System.out.println(agents);
-		System.out.println(agent_index);
+//		System.out.println(agents);
+//		System.out.println(agent_index);
 		StringBuilder sb = new StringBuilder();
 		sb.append("Agent Pointer (" + this.sentence_index + "," + this.sentence_depth + ") : | ");
 		for (Integer i : this.agent_index) {
