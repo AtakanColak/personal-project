@@ -80,22 +80,32 @@ class MainProgram {
 //		ModelInputOutput.PrintEvents(events, agents, actions);
 //		ModelInputOutput.PrintAgents(agents, internals, actions, locations);
 //		ModelInputOutput.PrintAgentPointers(agent_stack, agents);
-		System.out.println(events.get(15).toString(agents, actions));
-		Map<Integer, Double> EPS = ModelEventLearning.EP(events.get(15), events, actions);
-		ModelInputOutput.PrintEventProbabilities(EPS, actions);
+//		System.out.println(events.get(15).toString(agents, actions));
+//		FabulaEvent selected = events.get(15);
+//		Map<Integer, Double> EPS = ModelEventLearning.EP(selected, events, actions);
+//		ModelInputOutput.WriteObject("asked.txt", EPS);
+//		ModelInputOutput.PrintEventProbabilities(EPS, actions);
+//		Map<Integer, Map<Integer, Double>> superlist = ModelEventLearning.AllProbabilities(events, actions);
+//		ModelInputOutput.SaveEventProbabilities(actions.get(selected.action_id).name , EPS);
 //		ModelInputOutput.PrintEventProbabilities(ModelEventLearning.EventProbabilities(events.get(15), events, actions, story_id + 1), actions);
 //		System.out.print(log.toString());
-//		System.out.println("");
+
 //		FabulaEvent a = events.get(0);
 //		
 	}
 
-	private static void Log(String name) {
-		log.append("log[" + String.format("%4s", logctr.toString()) + "]: " + name + "\n");
-		logctr++;
+	private static void SaveData() {
+		ModelInputOutput.WriteObject("Data/agents.txt", agents);
+		ModelInputOutput.WriteObject("Data/pointers.txt", agent_stack);
+		ModelInputOutput.WriteObject("Data/goals.txt", goals);
+		ModelInputOutput.WriteObject("Data/internals.txt", internals);
+		ModelInputOutput.WriteObject("Data/actions.txt", actions);
+		ModelInputOutput.WriteObject("Data/events.txt", events);
+		ModelInputOutput.WriteObject("Data/locations.txt", locations);
+		ModelInputOutput.WriteObject("Data/perceptions.txt", perceptions);
 	}
-
-	public static void main(String[] args) {
+	
+	private static void ReadFables() {
 		InitLists();
 		NodeList nl = ModelInputOutput.ReadXMLNodeList("Aesop/aesop.xml", "fable");
 		LexicalizedParser lp = LexicalizedParser.loadModel(parserModel);
@@ -110,54 +120,24 @@ class MainProgram {
 				sictr++;
 			}
 			story_id++;
-			if(story_id == 25) break;
 		}
-		PrintLists();
-//		try {
-////			File file = new File("Aesop/aesop.xml");
-////			DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
-////			DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
-////			Document document = documentBuilder.parse(file);
-//			//document.getElementsByTagName("fable");
-////			LexicalizedParser lp = LexicalizedParser.loadModel(parserModel);
-//			for (int i = 0; i < nl.getLength(); i++) {
-////				Reader reader = new StringReader(nl.item(i).getTextContent());
-////				DocumentPreprocessor dp = new DocumentPreprocessor(reader);
-//				int ctr = 0;
-//				for (List<HasWord> sentence : ParseNodeString(nl.item(i))) {
-//					Tree parse = lp.apply(sentence);
-////					parse.pennPrint();
-//					HandleSentence(parse, ctr, 0);
-//					ctr++;
-//				}
-//				story_id++;
-//				if(i == 2) break;
-//			}
-//
-//		} catch (Exception e) {
-//			System.out.println(e.toString());
-//		} finally {
-//			PrintLists();
-//		}
-//		
-//		for (int i = 1; i < 10; ++i) {
-//			path = "Aesop/00" + i;
-//			LexicalizedParser lp = LexicalizedParser.loadModel(parserModel);
-//			TreebankLanguagePack tlp = lp.treebankLanguagePack();
-//			GrammaticalStructureFactory gsf = null;
-//			if (tlp.supportsGrammaticalStructures()) {
-//				gsf = tlp.grammaticalStructureFactory();
-//			}
-//			int ctr = 0;
-//			for (List<HasWord> sentence : new DocumentPreprocessor(path)) {
-//				Tree parse = lp.apply(sentence);
-////				parse.pennPrint();
-//				HandleSentence(parse, ctr, 0);
-//				ctr++;
-//			}
-//			
-//		}
-//		
+	}
+	
+	private static void Log(String name) {
+		log.append("log[" + String.format("%4s", logctr.toString()) + "]: " + name + "\n");
+		logctr++;
+	}
+
+	@SuppressWarnings("unchecked")
+	public static void main(String[] args) {
+//		Map<Integer, Double> asked = (Map<Integer, Double>) ModelInputOutput.ReadObject("asked.txt");
+//		actions = (List<FabulaElement>) ModelInputOutput.ReadObject("actions.txt");
+//		System.out.println("Probabilities for asked;");
+//		ModelInputOutput.PrintEventProbabilities(asked, actions);
+//		if (true) return;
+		ReadFables();
+		SaveData();
+		System.out.println("End of program execution.");
 	}
 
 //	8th  of May - AI CW

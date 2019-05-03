@@ -2,6 +2,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class FabulaEvent extends Identifier {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 3355941175096977525L;
 	public List<Integer> subject_agent_ids;
 	public Integer action_id;
 	public FabulaEvent(Integer sid) {

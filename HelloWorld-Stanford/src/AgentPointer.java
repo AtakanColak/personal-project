@@ -1,7 +1,12 @@
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class AgentPointer {
+public class AgentPointer implements Serializable{
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 5075184854643102432L;
 	public List<Integer> agent_index;
 	public Integer sentence_index;
 	public Integer sentence_depth;

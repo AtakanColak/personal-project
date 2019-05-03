@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -129,14 +130,28 @@ public class ModelEventLearning {
 		for(FabulaEvent event : events) 
 			PS.put(event.id, P(events, actions, actions.get(event.action_id).name));
 		Map<Integer, Double> PMIs = new HashMap<>();
+		List<Integer> already_calculated = new ArrayList<Integer>();
+		float ctr = 0;
 		for(FabulaEvent b : events) {
-			if(a.id == b.id) continue;
+			ctr += 100;
+			if(already_calculated.contains(b.action_id) || a.id == b.id) continue;
 			Double PMI = PMI(events, a, b, exyedf, PS.get(a.id), PS.get(b.id));
-			
 			PMIs.put(b.action_id, PMI);
+			System.out.println((ctr / events.size()) + "% done");
 		}
 		Map<Integer, Double> SORTED = PMIs.entrySet().stream().sorted(Map.Entry.comparingByValue()).collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue(), (e1, e2) -> e2, LinkedHashMap::new));
 		return SORTED;
+	}
+
+	public static Map<Integer, Map<Integer, Double>> AllProbabilities(List<FabulaEvent> events, List<FabulaElement> actions) {
+		Map<Integer, Map<Integer, Double>> superset = new HashMap<>();
+		float ctr = 0;
+		for(FabulaEvent e : events) {
+			superset.put(e.id, EP(e, events, actions));
+			ctr += 100;
+			System.out.println((ctr / events.size()) + "% done");
+		}
+		return null;
 	}
 	
 //	public static Map<Integer, Double> EventProbabilities(FabulaEvent a, List<FabulaEvent> es, List<FabulaElement> as,

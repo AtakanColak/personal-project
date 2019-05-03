@@ -2,6 +2,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Agent extends Identifier {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -6655912864605319986L;
 	public List<Integer> internals;
 	public List<Integer> actions;
 	public int location;

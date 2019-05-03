@@ -1,4 +1,8 @@
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -54,9 +58,9 @@ public class ModelInputOutput {
 		for (AgentPointer p : ps)
 			System.out.println(p.toString(a));
 	}
-	
+
 	public static void PrintEvents(List<FabulaEvent> es, List<Agent> ag, List<FabulaElement> ac) {
-		for(FabulaEvent e : es)
+		for (FabulaEvent e : es)
 			System.out.println(e.toString(ag, ac));
 	}
 
@@ -67,9 +71,48 @@ public class ModelInputOutput {
 			reverse_printing.add(String.format("%-20s%s%n", as.get(key).name, eps.get(key).toString()));
 		}
 		Collections.reverse(reverse_printing);
-		for(String s : reverse_printing) 
+		for (String s : reverse_printing)
 			System.out.print(s);
 //			System.out.printf("%-20s%s%n", as.get(key).name, eps.get(key).toString());
-		
+
 	}
+
+//	public static void SaveEventProbabilities(String filename, Map<Integer, Double> probabilities) {
+//		
+//	}
+	
+	public static Object ReadObject(String filename) {
+		try {
+			File file = new File(filename);
+			FileInputStream fi = new FileInputStream(file);
+			ObjectInputStream oi = new ObjectInputStream(fi);
+			Object o =  oi.readObject();
+			oi.close();
+			fi.close();
+			return o;
+		}
+		catch (Exception e) {
+			System.out.println(e.getMessage());
+			return null;
+		}
+	}
+	
+	public static void WriteObject(String filename, Object obj) {
+		try {
+		    File file = new File(filename);
+		    file.createNewFile();
+			FileOutputStream f = new FileOutputStream(file);
+			ObjectOutputStream o = new ObjectOutputStream(f);
+			o.writeObject(obj);
+			o.close();
+			f.close();
+		} catch (Exception e) {
+			System.out.println(e.getMessage());
+		}
+	}
+	
+//	@SuppressWarnings("unchecked")
+//	public static Map<Integer, Double> LoadEventProbabilities(String filename) {
+//		
+//	}
 }
