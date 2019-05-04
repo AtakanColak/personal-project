@@ -1,4 +1,7 @@
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -9,12 +12,12 @@ public class ModelEventLearning {
 
 	private static double P(List<FabulaEvent> events, List<FabulaElement> actions, String action_name) {
 		double ctr = 0;
-		for(FabulaEvent e : events)
-			if(actions.get(e.action_id).name.equals(action_name))
+		for (FabulaEvent e : events)
+			if (actions.get(e.action_id).name.equals(action_name))
 				ctr++;
 		return (ctr / events.size());
 	}
-	
+
 //	private static double occurence_probability(List<FabulaElement> actions, List<FabulaEvent> events, FabulaEvent a) {
 //		Integer ctr = 0;
 //		String aname = actions.get(a.action_id).name;
@@ -24,19 +27,46 @@ public class ModelEventLearning {
 //		}
 //		return (((double) ctr) / (double) events.size());
 //	}
-	
+
+	private static Map<Integer, List<Integer>> CS(List<FabulaEvent> events) {
+		Map<Integer, List<Integer>> map = new HashMap();
+		for (FabulaEvent e : events) {
+			for (Integer agent : e.subject_agent_ids) {
+				List<Integer> eventlist = map.get(agent);
+				if (eventlist == null)
+					eventlist = new ArrayList<Integer>();
+				eventlist.add(e.action_id);
+				map.put(agent, eventlist);
+			}
+		}
+		return map;
+	}
+
+	private static Integer C(Map<Integer, List<Integer>> CS, FabulaEvent a, FabulaEvent b) {
+		Integer coref_count = 1;
+		for (Integer agent : CS.keySet()) {
+			List<Integer> actionlist = CS.get(agent);
+			if(actionlist.contains(a.action_id) && actionlist.contains(b.action_id)) coref_count++;
+		}
+		return coref_count;
+	}
+
 	private static Integer C(List<FabulaEvent> events, FabulaEvent a, FabulaEvent b) {
 		Integer coref_count = 1;
-		for(Integer i1 = 0; i1 < events.size(); ++i1) {
+		for (Integer i1 = 0; i1 < events.size(); ++i1) {
 			boolean i1isA = true;
 			FabulaEvent e1 = events.get(i1);
-			if(e1.action_id != a.action_id && e1.action_id != b.action_id) continue;
-			if(e1.action_id == b.action_id) i1isA = false; 
-			for(Integer i2 = i1; i2 < events.size(); ++i2) {
+			if (e1.action_id != a.action_id && e1.action_id != b.action_id)
+				continue;
+			if (e1.action_id == b.action_id)
+				i1isA = false;
+			for (Integer i2 = i1; i2 < events.size(); ++i2) {
 				FabulaEvent e2 = events.get(i2);
-				if((e1.story_id != e2.story_id) || (i1isA && e2.action_id != b.action_id) || (!i1isA && e2.action_id != a.action_id)) continue;
-				for(Integer aid : e1.subject_agent_ids)
-					if(e2.subject_agent_ids.contains(aid)) {
+				if ((e1.story_id != e2.story_id) || (i1isA && e2.action_id != b.action_id)
+						|| (!i1isA && e2.action_id != a.action_id))
+					continue;
+				for (Integer aid : e1.subject_agent_ids)
+					if (e2.subject_agent_ids.contains(aid)) {
 						coref_count++;
 						break;
 					}
@@ -66,12 +96,13 @@ public class ModelEventLearning {
 ////		}
 //		return coref;
 //	}
-	
+
 	private static double EXYEDF(List<FabulaEvent> events) {
+		Map<Integer, List<Integer>> CS = CS(events);
 		double d = 0;
 		for (FabulaEvent e1 : events)
-			for (FabulaEvent e2 : events) 
-				d += C(events, e1, e2);
+			for (FabulaEvent e2 : events)
+				d += C(CS, e1, e2);
 		return d;
 	}
 
@@ -79,16 +110,17 @@ public class ModelEventLearning {
 		double n = C(events, a, b);
 //		if(exyedf == 0) return 0;
 		return (n / exyedf);
-	} 
-	
-	private static double PMI(List<FabulaEvent> events, FabulaEvent a, FabulaEvent b, double exyedf, double Pa, double Pb) {
+	}
+
+	private static double PMI(List<FabulaEvent> events, FabulaEvent a, FabulaEvent b, double exyedf, double Pa,
+			double Pb) {
 		double n = P(events, a, b, exyedf);
 		double d = (Pa * Pb);
 		double r = n / d;
 //		if(n == 0) return 0;
 		double pmi = Math.log10(r);
 		pmi = Math.abs(pmi);
-		if(((Double)pmi).isInfinite()) {
+		if (((Double) pmi).isInfinite()) {
 			return 0;
 //			System.out.println("ERROR of INFINITY");
 //			System.out.println("n is " + n);
@@ -99,51 +131,88 @@ public class ModelEventLearning {
 		return pmi;
 	}
 	
-//	private static double ulnec_numerator_p(List<FabulaEvent> events, Integer story_count, FabulaEvent a,
-//			FabulaEvent b) {
-//		Integer numerator = ulnec_numerator_c(events, story_count, a, b);
-//		Integer denominator = 0;
-//		for (FabulaEvent e1 : events) {
-//			for (FabulaEvent e2 : events) {
-////				if(e1.id == e2.id && e1.story_id == e2.story_id) continue;
-//				denominator += ulnec_numerator_c(events, story_count, e1, e2);
-//			}
-//		}
-//		double n = (double) numerator;
-//
-//		double d = (double) denominator;
-//		if (d == 0)
+//	private static double PMI(List<FabulaEvent> events, FabulaEvent a, FabulaEvent b, double exyedf, double Pa,
+//			double Pb, Map<Integer, List<Integer>> CS) {
+//		double n = (C(CS, a, b) / exyedf);//P(events, a, b, exyedf);
+//		double d = (Pa * Pb);
+//		double r = n / d;
+////		if(n == 0) return 0;
+//		double pmi = Math.log10(r);
+//		pmi = Math.abs(pmi);
+//		if (((Double) pmi).isInfinite()) {
 //			return 0;
-//		return (1 / (d - n));
+//		}
+//		return pmi;
 //	}
 
-//	private static double pmi(List<FabulaElement> actions, List<FabulaEvent> events, Integer story_count, FabulaEvent a,
-//			FabulaEvent b) {
-//		double n = ulnec_numerator_p(events, story_count, a, b);
-//		double d = occurence_probability(actions, events, a) * occurence_probability(actions, events, b);
-//		return Math.abs(Math.log10(n / d));
-//	}
+	private static Map<Integer, Double> PS(List<FabulaEvent> events) {
+		Map<Integer, Double> map = new HashMap<>();
+		for (FabulaEvent event : events) {
+			Double d = map.get(event.action_id);
+			if (d == null)
+				d = (double) 0;
+			d += 1;
+			map.put(event.action_id, d);
+		}
+		for (Integer key : map.keySet()) {
+			Double d = map.get(key);
+			d /= events.size();
+			map.put(key, d);
+		}
+		return map;
+	}
 
 	public static Map<Integer, Double> EP(FabulaEvent a, List<FabulaEvent> events, List<FabulaElement> actions) {
-		//PRECOMPUTATION
+		// PRECOMPUTATION
 		Double exyedf = EXYEDF(events);
-		Map<Integer, Double> PS = new HashMap<>();
-		for(FabulaEvent event : events) 
-			PS.put(event.id, P(events, actions, actions.get(event.action_id).name));
+		Map<Integer, Double> PS = PS(events);
+		DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+		Date date = new Date();
+		System.out.println(dateFormat.format(date)); // 2016/11/16 12:08:43
+		System.out.println("End of precomputation.");
 		Map<Integer, Double> PMIs = new HashMap<>();
 		List<Integer> already_calculated = new ArrayList<Integer>();
-		float ctr = 0;
-		for(FabulaEvent b : events) {
-			ctr += 100;
-			if(already_calculated.contains(b.action_id) || a.id == b.id) continue;
-			Double PMI = PMI(events, a, b, exyedf, PS.get(a.id), PS.get(b.id));
+		for (FabulaEvent b : events) {
+			if (already_calculated.contains(b.action_id) || a.id == b.id)
+				continue;
+			Double PMI = PMI(events, a, b, exyedf, PS.get(a.action_id), PS.get(b.action_id));
 			PMIs.put(b.action_id, PMI);
-			System.out.println((ctr / events.size()) + "% done");
 		}
-		Map<Integer, Double> SORTED = PMIs.entrySet().stream().sorted(Map.Entry.comparingByValue()).collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue(), (e1, e2) -> e2, LinkedHashMap::new));
+		Map<Integer, Double> SORTED = PMIs.entrySet().stream().sorted(Map.Entry.comparingByValue())
+				.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue(), (e1, e2) -> e2, LinkedHashMap::new));
 		return SORTED;
 	}
 
+	public static Map<Integer, Map<Integer, Double>> AllEP(List<FabulaEvent> events,  List<FabulaElement> actions) {
+		//PRECOMPUTATION
+		Map<Integer, Map<Integer, Double>> list = new HashMap<>();
+		Double exyedf = EXYEDF(events);
+		Map<Integer, Double> PS = PS(events);
+		DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+		Date date = new Date();
+		System.out.println(dateFormat.format(date)); // 2016/11/16 12:08:43
+		System.out.println("End of precomputation.");
+		//COMPUTATION
+		double ctr = 0;
+		for(FabulaEvent a : events) {
+			if(list.containsKey(a.action_id)) continue;
+			Map<Integer, Double> PMIs = new HashMap<>();
+			for (FabulaEvent b : events) {
+				if (PMIs.containsKey(b.action_id) || a.id == b.id)
+					continue;
+				Double PMI = PMI(events, a, b, exyedf, PS.get(a.action_id), PS.get(b.action_id));
+				PMIs.put(b.action_id, PMI);
+			}
+			list.put(a.action_id, PMIs);
+			ctr++;
+			System.out.println(ctr + "/" + actions.size() + " is completed");
+		}
+		date = new Date();
+		System.out.println(dateFormat.format(date)); // 2016/11/16 12:08:43
+		System.out.println("End of Computation.");
+		return list;
+	}
+	
 //	public static Map<Integer, Map<Integer, Double>> AllProbabilities(List<FabulaEvent> events, List<FabulaElement> actions) {
 //		Map<Integer, Map<Integer, Double>> superset = new HashMap<>();
 //		float ctr = 0;
@@ -154,7 +223,7 @@ public class ModelEventLearning {
 //		}
 //		return null;
 //	}
-	
+
 //	public static Map<Integer, Double> EventProbabilities(FabulaEvent a, List<FabulaEvent> es, List<FabulaElement> as,
 //			Integer story_count) {
 //		Map<Integer, Double> pmis = new HashMap<>();

@@ -1,7 +1,9 @@
 import java.io.File;
 import java.io.Reader;
 import java.io.StringReader;
-import java.sql.Time;
+import java.util.Date;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -105,12 +107,15 @@ class MainProgram {
 	private static void CalcPMI(FabulaEvent e) {
 		Map<Integer, Double> list = ModelEventLearning.EP(e, events, actions);
 		ModelInputOutput.WriteObject("PMI/" + actions.get(e.action_id).name + ".txt", list);
-		ModelInputOutput.PrintEventProbabilities(list, actions);
+		ModelInputOutput.PrintEventProbabilities(actions.get(e.action_id).name,list, actions);
 	}
 	
 	private static void LoadPMI(FabulaEvent e) {
 		Map<Integer, Double> list = (Map<Integer, Double>) ModelInputOutput.ReadObject("PMI/" + actions.get(e.action_id).name + ".txt");
-		ModelInputOutput.PrintEventProbabilities(list, actions);
+		ModelInputOutput.PrintEventProbabilities(actions.get(e.action_id).name,list, actions);
+		System.out.println("Action count is" + list.size());
+		System.out.println("Event count is" + events.size());
+		
 	}
 	
 	private static void SaveData() {
@@ -148,8 +153,8 @@ class MainProgram {
 	}
 
 	public static void main(String[] args) {
-		int mode = 1;
-		int eventid = 13;
+		int mode = 3;
+		int eventid = 27;
 //		Map<Integer, Double> asked = (Map<Integer, Double>) ModelInputOutput.ReadObject("asked.txt");
 //		actions = (List<FabulaElement>) ModelInputOutput.ReadObject("actions.txt");
 //		System.out.println("Probabilities for asked;");
@@ -164,15 +169,25 @@ class MainProgram {
 			LoadData();
 			FabulaEvent e = events.get(eventid);
 			CalcPMI(e);
+			
 			break;}
 		case 2: {
 			LoadData();
 			FabulaEvent e = events.get(eventid);
 			LoadPMI(e);
 			break;}
-		}
 		
+		case 3: {
+			LoadData();
+			Map<Integer, Map<Integer, Double>> superlist = ModelEventLearning.AllEP(events, actions); 
+			ModelInputOutput.WriteObject("AllList", superlist);
+			break;}
+		}
+		DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+		Date date = new Date();
+		System.out.println(dateFormat.format(date)); //2016/11/16 12:08:43
 		System.out.println("End of program execution.");
+		
 	}
 
 //	8th  of May - AI CW

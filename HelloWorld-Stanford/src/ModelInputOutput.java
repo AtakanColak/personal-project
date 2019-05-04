@@ -64,13 +64,14 @@ public class ModelInputOutput {
 			System.out.println(e.toString(ag, ac));
 	}
 
-	public static void PrintEventProbabilities(Map<Integer, Double> eps, List<FabulaElement> as) {
+	public static void PrintEventProbabilities(String name, Map<Integer, Double> eps, List<FabulaElement> as) {
 		Set<Integer> keyset = eps.keySet();
 		List<String> reverse_printing = new ArrayList<String>();
 		for (Integer key : keyset) {
 			reverse_printing.add(String.format("%-20s%s%n", as.get(key).name, eps.get(key).toString()));
 		}
 		Collections.reverse(reverse_printing);
+		System.out.println("Event probabilities with known event " + name);
 		for (String s : reverse_printing)
 			System.out.print(s);
 //			System.out.printf("%-20s%s%n", as.get(key).name, eps.get(key).toString());
