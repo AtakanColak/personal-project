@@ -7,6 +7,7 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -66,14 +67,30 @@ public class ModelInputOutput {
 
 	public static void PrintEventProbabilities(String name, Map<Integer, Double> eps, List<FabulaElement> as) {
 		Set<Integer> keyset = eps.keySet();
+//		Map<String, Double> printing = new HashMap<>();
 		List<String> reverse_printing = new ArrayList<String>();
+		
+		
+		int ctr = 0;
+		String printable = "";
 		for (Integer key : keyset) {
-			reverse_printing.add(String.format("%-20s%s%n", as.get(key).name, eps.get(key).toString()));
+			if(ctr == 4) {
+				printable += "\\\\";
+				reverse_printing.add(printable);
+				ctr = 0;
+				printable = "";
+			}
+			else {
+				if(ctr != 0 ) printable += " & ";
+				printable += as.get(key).name + " & " + String.format("%.3g", eps.get(key));
+				ctr++;
+			}
+//			reverse_printing.add(String.format("%-20s%s%n", , ));
 		}
 		Collections.reverse(reverse_printing);
 		System.out.println("Event probabilities with known event " + name);
 		for (String s : reverse_printing)
-			System.out.print(s);
+			System.out.println(s);
 //			System.out.printf("%-20s%s%n", as.get(key).name, eps.get(key).toString());
 
 	}

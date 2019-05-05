@@ -75,14 +75,14 @@ class MainProgram {
 
 	private static void PrintLists() {
 
-//		ModelInputOutput.PrintIdentifierList(actions, "Action");
-//		ModelInputOutput.PrintIdentifierList(internals, "Internal");
-//		ModelInputOutput.PrintIdentifierList(goals, "Goal");
-//		ModelInputOutput.PrintIdentifierList(locations, "Location");
-//		ModelInputOutput.PrintIdentifierList(perceptions, "Perception");
-//		ModelInputOutput.PrintEvents(events, agents, actions);
-//		ModelInputOutput.PrintAgents(agents, internals, actions, locations);
-//		ModelInputOutput.PrintAgentPointers(agent_stack, agents);
+		ModelInputOutput.PrintIdentifierList(actions, "Action");
+		ModelInputOutput.PrintIdentifierList(internals, "Internal");
+		ModelInputOutput.PrintIdentifierList(goals, "Goal");
+		ModelInputOutput.PrintIdentifierList(locations, "Location");
+		ModelInputOutput.PrintIdentifierList(perceptions, "Perception");
+		ModelInputOutput.PrintEvents(events, agents, actions);
+		ModelInputOutput.PrintAgents(agents, internals, actions, locations);
+		ModelInputOutput.PrintAgentPointers(agent_stack, agents);
 //		System.out.println(events.get(15).toString(agents, actions));
 //		FabulaEvent selected = events.get(15);
 //		Map<Integer, Double> EPS = ModelEventLearning.EP(selected, events, actions);
@@ -91,33 +91,34 @@ class MainProgram {
 //		Map<Integer, Map<Integer, Double>> superlist = ModelEventLearning.AllProbabilities(events, actions);
 //		ModelInputOutput.SaveEventProbabilities(actions.get(selected.action_id).name , EPS);
 //		ModelInputOutput.PrintEventProbabilities(ModelEventLearning.EventProbabilities(events.get(15), events, actions, story_id + 1), actions);
-//		System.out.print(log.toString());
+		System.out.print(log.toString());
 
 //		FabulaEvent a = events.get(0);
 //		
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	private static void LoadData() {
 //		agents = (List<Agent>) ModelInputOutput.ReadObject("Data/agents.txt");
-		events  = (List<FabulaEvent>) ModelInputOutput.ReadObject("Data/events.txt");
+		events = (List<FabulaEvent>) ModelInputOutput.ReadObject("Data/events.txt");
 		actions = (List<FabulaElement>) ModelInputOutput.ReadObject("Data/actions.txt");
 	}
 
 	private static void CalcPMI(FabulaEvent e) {
 		Map<Integer, Double> list = ModelEventLearning.EP(e, events, actions);
 		ModelInputOutput.WriteObject("PMI/" + actions.get(e.action_id).name + ".txt", list);
-		ModelInputOutput.PrintEventProbabilities(actions.get(e.action_id).name,list, actions);
+		ModelInputOutput.PrintEventProbabilities(actions.get(e.action_id).name, list, actions);
 	}
-	
+
 	private static void LoadPMI(FabulaEvent e) {
-		Map<Integer, Double> list = (Map<Integer, Double>) ModelInputOutput.ReadObject("PMI/" + actions.get(e.action_id).name + ".txt");
-		ModelInputOutput.PrintEventProbabilities(actions.get(e.action_id).name,list, actions);
+		Map<Integer, Double> list = (Map<Integer, Double>) ModelInputOutput
+				.ReadObject("PMI/" + actions.get(e.action_id).name + ".txt");
+		ModelInputOutput.PrintEventProbabilities(actions.get(e.action_id).name, list, actions);
 		System.out.println("Action count is" + list.size());
 		System.out.println("Event count is" + events.size());
-		
+
 	}
-	
+
 	private static void SaveData() {
 		ModelInputOutput.WriteObject("Data/agents.txt", agents);
 		ModelInputOutput.WriteObject("Data/pointers.txt", agent_stack);
@@ -128,7 +129,7 @@ class MainProgram {
 		ModelInputOutput.WriteObject("Data/locations.txt", locations);
 		ModelInputOutput.WriteObject("Data/perceptions.txt", perceptions);
 	}
-	
+
 	private static void ReadFables() {
 		InitLists();
 		NodeList nl = ModelInputOutput.ReadXMLNodeList("Aesop/aesop.xml", "fable");
@@ -146,14 +147,29 @@ class MainProgram {
 			story_id++;
 		}
 	}
-	
+
+	private static void ReadFable(Integer fable_index) {
+		InitLists();
+		NodeList nl = ModelInputOutput.ReadXMLNodeList("Aesop/aesop.xml", "fable");
+		LexicalizedParser lp = LexicalizedParser.loadModel(parserModel);
+		int sictr = 0;
+		// For each sentence
+		story_id = fable_index;
+		for (List<HasWord> sentence : ModelInputOutput.ParseNodeString(nl.item(fable_index))) {
+			Tree parse = lp.apply(sentence);
+			HandleSentence(parse, sictr, 0);
+			sictr++;
+		}
+	}
+
 	private static void Log(String name) {
 		log.append("log[" + String.format("%4s", logctr.toString()) + "]: " + name + "\n");
 		logctr++;
 	}
 
+	@SuppressWarnings("unchecked")
 	public static void main(String[] args) {
-		int mode = 3;
+		int mode = 5;
 		int eventid = 27;
 //		Map<Integer, Double> asked = (Map<Integer, Double>) ModelInputOutput.ReadObject("asked.txt");
 //		actions = (List<FabulaElement>) ModelInputOutput.ReadObject("actions.txt");
@@ -161,6 +177,11 @@ class MainProgram {
 //		ModelInputOutput.PrintEventProbabilities(asked, actions);
 //		if (true) return;
 		switch (mode) {
+		case 5: {
+			ReadFable(9);
+			PrintLists();
+			break;
+		}
 		case 0:
 			ReadFables();
 			SaveData();
@@ -169,25 +190,37 @@ class MainProgram {
 			LoadData();
 			FabulaEvent e = events.get(eventid);
 			CalcPMI(e);
-			
-			break;}
+
+			break;
+		}
 		case 2: {
 			LoadData();
 			FabulaEvent e = events.get(eventid);
 			LoadPMI(e);
-			break;}
-		
+			break;
+		}
+
 		case 3: {
 			LoadData();
-			Map<Integer, Map<Integer, Double>> superlist = ModelEventLearning.AllEP(events, actions); 
+			Map<Integer, Map<Integer, Double>> superlist = ModelEventLearning.AllEP(events, actions);
 			ModelInputOutput.WriteObject("AllList", superlist);
-			break;}
+			break;
+		}
+
+		case 4: {
+			LoadData();
+			Map<Integer, Map<Integer, Double>> superlist = (Map<Integer, Map<Integer, Double>>) ModelInputOutput
+					.ReadObject("AllList");
+			int actionid = 10;
+			ModelInputOutput.PrintEventProbabilities(actions.get(actionid).name,
+					ModelEventLearning.SortEP(superlist.get(actionid)), actions);
+		}
 		}
 		DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 		Date date = new Date();
-		System.out.println(dateFormat.format(date)); //2016/11/16 12:08:43
+		System.out.println(dateFormat.format(date)); // 2016/11/16 12:08:43
 		System.out.println("End of program execution.");
-		
+
 	}
 
 //	8th  of May - AI CW
@@ -290,15 +323,14 @@ class MainProgram {
 
 //	static int iactr = 0;
 	private static void IdentifyAgent(String name, Integer si, Integer sd) {
-		
-		
+
 		Integer agent_index = ModelElementTools.IndexByNameContains(agents, story_id, name);
 		if (agent_index == null) {
 			agent_index = agents.size();
 			Agent n = new Agent(agent_index, name);
 			n.story_id = story_id;
 			agents.add(n);
-			
+
 			Log(agents.get(agent_index).toString("Agent"));
 		}
 		Agent a = agents.get(agent_index);
@@ -436,15 +468,14 @@ class MainProgram {
 			switch (tag) {
 			case "TO":
 				try {
-				Tree subVP = c.children()[i + 1];
-				String verb = subVP.firstChild().firstChild().label().toString();
-				String noun = GetName(subVP.children()[1], true);
-				IdentifyGoal(verb + " " + noun);
+					Tree subVP = c.children()[i + 1];
+					String verb = subVP.firstChild().firstChild().label().toString();
+					String noun = GetName(subVP.children()[1], true);
+					IdentifyGoal(verb + " " + noun);
+				} catch (Exception e) {
+					System.out.println("Out of bounds at story " + story_id + " | sentence " + si);
+				} finally {
 				}
-				catch (Exception e){
-					System.out.println("Out of bounds at story " + story_id + " | sentence " + si );
-				}
-				finally {}
 				break;
 			case "VBZ":
 			case "VBD":
@@ -604,7 +635,8 @@ class MainProgram {
 					sen_np = GetName(c.children()[i], false);
 					if (sen_np == null)
 						continue;
-					Integer agent_index = ModelElementTools.IndexByNameContains(agents, story_id, sen_np);//Tools.AgentIndex(agents, sen_np);
+					Integer agent_index = ModelElementTools.IndexByNameContains(agents, story_id, sen_np);// Tools.AgentIndex(agents,
+																											// sen_np);
 					if (agent_index == null) {
 						agent_index = agents.size();
 						Agent n = new Agent(agent_index, sen_np);

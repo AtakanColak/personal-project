@@ -162,6 +162,11 @@ public class ModelEventLearning {
 		return map;
 	}
 
+	public static Map<Integer, Double> SortEP(Map<Integer, Double> PMIs) {
+		return PMIs.entrySet().stream().sorted(Map.Entry.comparingByValue())
+				.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue(), (e1, e2) -> e2, LinkedHashMap::new));
+	}
+	
 	public static Map<Integer, Double> EP(FabulaEvent a, List<FabulaEvent> events, List<FabulaElement> actions) {
 		// PRECOMPUTATION
 		Double exyedf = EXYEDF(events);
